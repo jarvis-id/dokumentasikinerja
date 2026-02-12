@@ -5,24 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Riwayat Laporan - DokKiner</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; padding-bottom: 50px; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; padding-bottom: 50px; color: #333; }
         .navbar { display: flex; justify-content: space-around; background: #34495e; padding: 12px 0; position: sticky; top: 0; z-index: 9999; }
-        .navbar a { color: white; text-decoration: none; font-weight: bold; opacity: 0.7; }
+        .navbar a { color: white; text-decoration: none; font-weight: bold; opacity: 0.7; font-size: 13px; }
         .navbar a.active { opacity: 1; border-bottom: 2px solid #00d2ff; }
-
         .container { max-width: 900px; margin: auto; padding: 15px; }
         .filter-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        
-        .report-item { background: white; padding: 15px; border-radius: 8px; margin-bottom: 12px; border-left: 5px solid #3498db; position: relative; cursor: pointer; }
-        .report-item:hover { background: #f9f9f9; }
-        .report-info { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
-        .report-meta { font-size: 11px; color: #7f8c8d; }
-        
-        .btn-del { position: absolute; right: 15px; top: 15px; background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-        
-        label { font-size: 10px; font-weight: bold; text-transform: uppercase; color: #95a5a6; }
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        label { font-size: 10px; font-weight: bold; color: #95a5a6; text-transform: uppercase; }
         select, input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        
+        .report-item { background: white; padding: 15px; border-radius: 8px; margin-bottom: 12px; border-left: 5px solid #3498db; position: relative; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .btn-del { position: absolute; right: 15px; top: 15px; background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 10px; }
+        
+        .btn-rekap { background: #27ae60; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; font-weight: bold; margin-top: 15px; cursor: pointer; }
+
+        /* TABEL CETAK REKAP */
+        #print-rekap-area { display: none; }
+        @media print {
+            .navbar, .filter-card, .report-item, .btn-rekap { display: none !important; }
+            #print-rekap-area { display: block !important; background: white; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 10px; }
+            th { background-color: #eee !important; }
+            .rekap-title { text-align: center; text-transform: uppercase; font-size: 14px; font-weight: bold; }
+        }
     </style>
 </head>
 <body>
@@ -33,10 +40,19 @@
 </nav>
 
 <div class="container">
-    <h3>📂 Riwayat Laporan</h3>
+    <h3>📂 Filter & Rekapitulasi</h3>
     
     <div class="filter-card">
         <div class="filter-grid">
+            <div>
+                <label>Tahun</label>
+                <select id="f-year" onchange="renderHistory()">
+                    <option value="">Semua Tahun</option>
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
+            </div>
             <div>
                 <label>Bulan</label>
                 <select id="f-month" onchange="renderHistory()">
@@ -48,52 +64,103 @@
                 </select>
             </div>
             <div>
-                <label>Tanggal Spesifik</label>
+                <label>Tanggal</label>
                 <input type="date" id="f-date" onchange="renderHistory()">
             </div>
         </div>
+        <button class="btn-rekap" onclick="printRekap()">🖨️ Cetak Rekapitulasi (Sesuai Filter)</button>
     </div>
 
     <div id="history-list"></div>
+
+    <!-- AREA CETAK REKAPITULASI (HIDDEN IN SCREEN) -->
+    <div id="print-rekap-area">
+        <div class="rekap-title">Laporan Rekapitulasi Kinerja</div>
+        <div id="rekap-info-text" style="text-align:center; margin-bottom:10px;"></div>
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Waktu/Tanggal</th>
+                    <th>Total Item</th>
+                    <th>Keterangan (Ringkasan)</th>
+                </tr>
+            </thead>
+            <tbody id="rekap-body"></tbody>
+        </table>
+    </div>
 </div>
 
 <script>
     function renderHistory() {
-        const listDiv = document.getElementById('history-list');
+        const fYear = document.getElementById('f-year').value;
         const fMonth = document.getElementById('f-month').value;
         const fDate = document.getElementById('f-date').value;
+        const listDiv = document.getElementById('history-list');
         
         let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
 
+        // Filter Multi-Level
+        if (fYear) history = history.filter(h => h.year === fYear);
         if (fMonth) history = history.filter(h => h.month === fMonth);
         if (fDate) history = history.filter(h => h.date === fDate);
 
-        if (history.length === 0) {
-            listDiv.innerHTML = "<p style='text-align:center; color:#999; margin-top:50px;'>Data tidak ditemukan.</p>";
-            return;
-        }
+        history.sort((a, b) => b.id - a.id);
 
-        listDiv.innerHTML = history.reverse().map(h => `
+        listDiv.innerHTML = history.map(h => `
             <div class="report-item" onclick="restoreData(${h.id})">
                 <button class="btn-del" onclick="deleteItem(event, ${h.id})">Hapus</button>
-                <div class="report-info">LAPORAN - ${h.timestamp}</div>
-                <div class="report-meta">Total Item Pekerjaan: ${h.data.length}</div>
-                <div class="report-meta">ID: ${h.id}</div>
+                <div style="font-weight:bold;">${h.timestamp}</div>
+                <div style="font-size:11px; color:#666;">Jumlah: ${h.data.length} Item Pekerjaan</div>
             </div>
-        `).join('');
+        `).join('') || '<p style="text-align:center; color:#999;">Data tidak ditemukan.</p>';
+        
+        return history; // Return data terfilter untuk fungsi rekap
+    }
+
+    function printRekap() {
+        const filteredData = renderHistory();
+        if (filteredData.length === 0) return alert("Tidak ada data untuk dicetak!");
+
+        const fYear = document.getElementById('f-year').value;
+        const fMonth = document.getElementById('f-month').options[document.getElementById('f-month').selectedIndex].text;
+        const fDate = document.getElementById('f-date').value;
+
+        let info = "Laporan ";
+        if(fDate) info += `Tanggal ${fDate}`;
+        else if(fMonth !== "Semua Bulan") info += `Bulan ${fMonth} ${fYear}`;
+        else if(fYear) info += `Tahun ${fYear}`;
+        else info += "Semua Periode";
+
+        document.getElementById('rekap-info-text').innerText = info;
+
+        const tbody = document.getElementById('rekap-body');
+        tbody.innerHTML = filteredData.map((h, index) => {
+            // Gabungkan keterangan dari semua item pekerjaan sebagai ringkasan
+            const summary = h.data.map(d => d.desc.substring(0, 30) + "...").join(" | ");
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${h.timestamp}</td>
+                    <td>${h.data.length} Item</td>
+                    <td>${summary}</td>
+                </tr>
+            `;
+        }).join('');
+
+        window.print();
     }
 
     function deleteItem(event, id) {
         event.stopPropagation();
-        if (!confirm("Hapus laporan ini permanen?")) return;
+        if (!confirm("Hapus data ini?")) return;
         let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
-        history = history.filter(h => h.id !== id);
-        localStorage.setItem('lapdok_history', JSON.stringify(history));
+        localStorage.setItem('lapdok_history', JSON.stringify(history.filter(h => h.id !== id)));
         renderHistory();
     }
 
     function restoreData(id) {
-        if (!confirm("Muat laporan ini ke Form Utama untuk diedit/cetak?")) return;
+        if (!confirm("Edit/Cetak ulang detail laporan ini?")) return;
         const history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
         const entry = history.find(h => h.id === id);
         if (entry) {
