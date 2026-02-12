@@ -24,7 +24,7 @@
         .btn-del { position: absolute; right: 10px; top: 10px; background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; }
 
         /* ==========================================
-           CSS CETAK (PRINT PDF) - 3 ITEM PER HALAMAN
+           CSS CETAK (PRINT PDF) - FIX 3 ITEM/HALAMAN
            ========================================== */
         #print-area { display: none; }
 
@@ -48,7 +48,7 @@
 
             .print-footer-page {
                 position: absolute; bottom: 8mm; left: 10mm;
-                font-size: 10px; font-weight: bold;
+                font-size: 10px; font-weight: bold; color: #000;
             }
 
             .print-job-item { 
@@ -141,8 +141,8 @@
         setTimeout(() => { window.print(); }, 500);
     }
 
-    function deleteItem(e, id) { e.stopPropagation(); if(!confirm("Hapus?")) return; let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]'); localStorage.setItem('lapdok_history', JSON.stringify(history.filter(x => x.id !== id))); updateUI(); }
-    function restoreToEditor(id) { if(!confirm("Muat ke editor?")) return; const history = JSON.parse(localStorage.getItem('lapdok_history') || '[]'); const entry = history.find(x => x.id === id); localStorage.setItem('lapdok_draft', JSON.stringify(entry.data)); window.location.href = "index.html"; }
+    function deleteItem(e, id) { e.stopPropagation(); if(!confirm("Hapus riwayat laporan ini?")) return; let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]'); localStorage.setItem('lapdok_history', JSON.stringify(history.filter(x => x.id !== id))); updateUI(); }
+    function restoreToEditor(id) { if(!confirm("Muat laporan ini ke editor utama?")) return; const history = JSON.parse(localStorage.getItem('lapdok_history') || '[]'); const entry = history.find(x => x.id === id); localStorage.setItem('lapdok_draft', JSON.stringify(entry.data)); window.location.href = "index.html"; }
     window.onload = updateUI;
 </script>
 </body>
