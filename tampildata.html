@@ -3,95 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cetak Riwayat Detail - DokKiner</title>
+    <title>Riwayat & Cetak - DokKiner</title>
     <style>
         /* ==========================================
-           CSS UNTUK TAMPILAN LAYAR (SCREEN)
+           CSS LAYAR (SCREEN)
            ========================================== */
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; color: #333; }
-        
         .navbar { display: flex; justify-content: space-around; background: #34495e; padding: 12px 0; position: sticky; top: 0; z-index: 9999; }
         .navbar a { color: white; text-decoration: none; font-weight: bold; opacity: 0.7; font-size: 13px; }
         .navbar a.active { opacity: 1; border-bottom: 2px solid #00d2ff; }
-
         .container { max-width: 900px; margin: auto; padding: 15px; }
-        .filter-card { background: white; padding: 15px; border-radius: 8px; margin: 10px 0 20px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+        .filter-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; }
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         label { font-size: 10px; font-weight: bold; color: #95a5a6; text-transform: uppercase; }
         select, input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
-
         .reset-link { font-size: 10px; color: #3498db; cursor: pointer; text-decoration: underline; display: inline-block; margin-top: 5px; }
         .btn-print-full { background: #27ae60; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px; margin-top: 15px; }
-
         .report-card-preview { background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #3498db; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; }
-        .title { font-weight: bold; font-size: 13px; }
-        .meta { font-size: 11px; color: #7f8c8d; }
         .btn-del { position: absolute; right: 10px; top: 10px; background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; }
 
         /* ==========================================
-           CSS KHUSUS CETAK (PRINT PDF)
+           CSS CETAK (PRINT PDF) - 3 ITEM PER HALAMAN
            ========================================== */
         #print-area { display: none; }
 
         @media print {
-            @page { size: A4; margin: 10mm; }
+            @page { size: A4; margin: 0; }
             .navbar, .filter-card, #history-list, .btn-del, .btn-print-full, .reset-link { display: none !important; }
             body { background: white; padding: 0; margin: 0; }
             #print-area { display: block !important; }
             
             .page-container { 
                 page-break-after: always; 
-                height: 275mm; /* Tinggi A4 dikurangi margin */
-                position: relative;
-                overflow: hidden;
+                height: 297mm; width: 210mm;
+                padding: 10mm; position: relative; overflow: hidden;
             }
             .page-container:last-child { page-break-after: auto; }
 
             .print-header-global {
                 text-align: center; font-size: 14px; font-weight: bold;
-                border-bottom: 1.5px solid #000; margin-bottom: 10px; padding-bottom: 5px;
+                border-bottom: 2px solid #000; margin-bottom: 8px; padding-bottom: 5px; text-transform: uppercase;
+            }
+
+            .print-footer-page {
+                position: absolute; bottom: 8mm; left: 10mm;
+                font-size: 10px; font-weight: bold;
             }
 
             .print-job-item { 
-                border: 1px solid #000; 
-                margin-bottom: 8px; 
-                height: 82mm; /* Tinggi tetap agar 3 item pas (82mm x 3 = 246mm + header/footer) */
-                display: block; 
-                overflow: hidden;
+                border: 1px solid #000; margin-bottom: 8px; 
+                height: 80mm; display: block; overflow: hidden;
             }
             
             .print-job-header { background: #34495e !important; color: white !important; padding: 4px 10px; font-weight: bold; font-size: 11px; }
             .print-meta-data { padding: 4px 10px; font-size: 8.5px; border-bottom: 1px solid #000; line-height: 1.2; background: #f9f9f9 !important; }
-            
-            /* PHOTO GRID DENGAN TINGGI TETAP */
-            .print-photo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; height: 50mm; }
+            .print-photo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; height: 48mm; }
             .print-photo-col { padding: 4px; text-align: center; border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; }
             .print-photo-label { font-size: 8px; font-weight: bold; margin-bottom: 2px; }
-            
-            .print-photo-box { 
-                width: 42mm;  /* Lebar tetap */
-                height: 42mm; /* Tinggi tetap (1:1) */
-                border: 1px solid #ccc; 
-                display: flex; align-items: center; justify-content: center; 
-                background: #fff; overflow: hidden;
-            }
-            .print-photo-box img { 
-                max-width: 100%; 
-                max-height: 100%; 
-                object-fit: contain; /* Foto menyusut proporsional, tidak memanjang */
-            }
-            
-            .print-desc-box { 
-                padding: 6px 10px; font-size: 9px; 
-                border-top: 1px solid #000; height: 15mm; 
-                overflow: hidden; line-height: 1.3;
-            }
-
-            .print-footer-page {
-                position: absolute; bottom: 0; right: 0;
-                font-size: 9px; font-weight: bold;
-            }
+            .print-photo-box { width: 40mm; height: 40mm; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; background: #fff; overflow: hidden; }
+            .print-photo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+            .print-desc-box { padding: 6px 10px; font-size: 9px; border-top: 1px solid #000; height: 16mm; overflow: hidden; line-height: 1.3; }
         }
     </style>
 </head>
@@ -105,54 +77,28 @@
 <div class="container">
     <div class="filter-card">
         <div class="filter-grid">
-            <div>
-                <label>Tahun</label>
-                <select id="f-year" onchange="updateUI()"></select>
-            </div>
-            <div>
-                <label>Bulan</label>
-                <select id="f-month" onchange="updateUI()">
-                    <option value="">Semua Bulan</option>
-                    <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
-                    <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
-                    <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
-                    <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
-                </select>
-            </div>
-            <div>
-                <label>Tanggal</label>
-                <input type="date" id="f-date" onchange="updateUI()">
-                <span class="reset-link" onclick="resetDate()">Semua Tanggal</span>
-            </div>
+            <div><label>Tahun</label><select id="f-year" onchange="updateUI()"></select></div>
+            <div><label>Bulan</label><select id="f-month" onchange="updateUI()"><option value="">Semua Bulan</option><option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select></div>
+            <div><label>Tanggal</label><input type="date" id="f-date" onchange="updateUI()"><span class="reset-link" onclick="resetDate()">Semua Tanggal</span></div>
         </div>
         <button class="btn-print-full" onclick="generatePrintView()">🖨️ Cetak Laporan Detail</button>
     </div>
     <div id="history-list"></div>
 </div>
 
-<div id="print-area">
-    <div id="print-content-target"></div>
-</div>
+<div id="print-area"><div id="print-content-target"></div></div>
 
 <script>
-    // Inisialisasi Tahun
     const yearSelect = document.getElementById('f-year');
     const curYear = new Date().getFullYear();
     for(let i = curYear; i >= 2024; i--) {
-        let opt = document.createElement('option');
-        opt.value = i; opt.innerHTML = i;
-        yearSelect.appendChild(opt);
+        let opt = document.createElement('option'); opt.value = i; opt.innerHTML = i; yearSelect.appendChild(opt);
     }
 
-    function resetDate() {
-        document.getElementById('f-date').value = "";
-        updateUI();
-    }
+    function resetDate() { document.getElementById('f-date').value = ""; updateUI(); }
 
     function getFilteredData() {
-        const fy = yearSelect.value;
-        const fm = document.getElementById('f-month').value;
-        const fd = document.getElementById('f-date').value;
+        const fy = yearSelect.value, fm = document.getElementById('f-month').value, fd = document.getElementById('f-date').value;
         let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
         history = history.filter(h => h.year === fy);
         if(fm) history = history.filter(h => h.month === fm);
@@ -161,96 +107,42 @@
     }
 
     function updateUI() {
-        const data = getFilteredData();
-        const listDiv = document.getElementById('history-list');
-        if(data.length === 0) {
-            listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Data tidak ditemukan.</p>';
-            return;
-        }
-        listDiv.innerHTML = data.map(h => `
-            <div class="report-card-preview" onclick="restoreToEditor(${h.id})">
-                <button class="btn-del" onclick="deleteItem(event, ${h.id})">Hapus</button>
-                <div class="title">${h.timestamp}</div>
-                <div class="meta">📦 ${h.data.length} Item Pekerjaan</div>
-            </div>
-        `).join('');
+        const data = getFilteredData(), listDiv = document.getElementById('history-list');
+        if(data.length === 0) { listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Data tidak ditemukan.</p>'; return; }
+        listDiv.innerHTML = data.map(h => `<div class="report-card-preview" onclick="restoreToEditor(${h.id})"><button class="btn-del" onclick="deleteItem(event, ${h.id})">Hapus</button><div style="font-weight:bold; font-size:13px;">${h.timestamp}</div><div style="font-size:11px; color:#7f8c8d;">📦 ${h.data.length} Item Pekerjaan</div></div>`).join('');
     }
 
     function generatePrintView() {
-        const data = getFilteredData();
-        if(data.length === 0) return alert("Data kosong.");
-
-        const target = document.getElementById('print-content-target');
-        target.innerHTML = ''; 
+        const data = getFilteredData(); if(data.length === 0) return alert("Data kosong.");
+        const target = document.getElementById('print-content-target'); target.innerHTML = ''; 
 
         let allJobItems = [];
-        data.forEach(report => {
-            report.data.forEach(job => {
-                allJobItems.push({ ...job, timestamp: report.timestamp });
-            });
-        });
+        data.forEach(report => { report.data.forEach(job => { allJobItems.push({ ...job, timestamp: report.timestamp }); }); });
 
         const totalPages = Math.ceil(allJobItems.length / 3);
 
         for (let i = 0; i < allJobItems.length; i += 3) {
             const pageNum = Math.floor(i / 3) + 1;
-            const pageContainer = document.createElement('div');
-            pageContainer.className = 'page-container';
-            
+            const pageContainer = document.createElement('div'); pageContainer.className = 'page-container';
             const chunk = allJobItems.slice(i, i + 3);
             const chunkHtml = chunk.map((item, idx) => `
                 <div class="print-job-item">
                     <div class="print-job-header">Pekerjaan ke-${i + idx + 1} (${item.timestamp})</div>
-                    <div class="print-meta-data">
-                        <strong>GPS:</strong> ${item.gps} | <strong>ALAMAT:</strong> ${item.addr.substring(0, 100)}
-                    </div>
+                    <div class="print-meta-data"><strong>GPS:</strong> ${item.gps} | <strong>ALAMAT:</strong> ${item.addr}</div>
                     <div class="print-photo-grid">
-                        <div class="print-photo-col">
-                            <div class="print-photo-label">SEBELUM</div>
-                            <div class="print-photo-box">${item.p1 ? `<img src="${item.p1}">` : ''}</div>
-                        </div>
-                        <div class="print-photo-col">
-                            <div class="print-photo-label">PROSES</div>
-                            <div class="print-photo-box">${item.p2 ? `<img src="${item.p2}">` : ''}</div>
-                        </div>
-                        <div class="print-photo-col" style="border-right:none;">
-                            <div class="print-photo-label">SESUDAH</div>
-                            <div class="print-photo-box">${item.p3 ? `<img src="${item.p3}">` : ''}</div>
-                        </div>
+                        ${[1,2,3].map(p => `<div class="print-photo-col"><div class="print-photo-label">${p==1?'SEBELUM':p==2?'PROSES':'SESUDAH'}</div><div class="print-photo-box">${item['p'+p] ? `<img src="${item['p'+p]}">` : ''}</div></div>`).join('')}
                     </div>
-                    <div class="print-desc-box">
-                        <strong>KETERANGAN:</strong> ${item.desc || '-'}
-                    </div>
-                </div>
-            `).join('');
+                    <div class="print-desc-box"><strong>KETERANGAN:</strong> ${item.desc || '-'}</div>
+                </div>`).join('');
 
-            pageContainer.innerHTML = `
-                <div class="print-header-global">DOKUMENTASI LAPORAN KINERJA</div>
-                ${chunkHtml}
-                <div class="print-footer-page">Halaman ${pageNum} dari ${totalPages}</div>
-            `;
+            pageContainer.innerHTML = `<div class="print-header-global">DOKUMENTASI LAPORAN KINERJA</div>${chunkHtml}<div class="print-footer-page">Halaman ${pageNum} dari ${totalPages}</div>`;
             target.appendChild(pageContainer);
         }
-
         setTimeout(() => { window.print(); }, 500);
     }
 
-    function deleteItem(e, id) {
-        e.stopPropagation();
-        if(!confirm("Hapus laporan?")) return;
-        let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
-        localStorage.setItem('lapdok_history', JSON.stringify(history.filter(x => x.id !== id)));
-        updateUI();
-    }
-
-    function restoreToEditor(id) {
-        if(!confirm("Muat ke editor?")) return;
-        const history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
-        const entry = history.find(x => x.id === id);
-        localStorage.setItem('lapdok_draft', JSON.stringify(entry.data));
-        window.location.href = "index.html";
-    }
-
+    function deleteItem(e, id) { e.stopPropagation(); if(!confirm("Hapus?")) return; let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]'); localStorage.setItem('lapdok_history', JSON.stringify(history.filter(x => x.id !== id))); updateUI(); }
+    function restoreToEditor(id) { if(!confirm("Muat ke editor?")) return; const history = JSON.parse(localStorage.getItem('lapdok_history') || '[]'); const entry = history.find(x => x.id === id); localStorage.setItem('lapdok_draft', JSON.stringify(entry.data)); window.location.href = "index.html"; }
     window.onload = updateUI;
 </script>
 </body>
