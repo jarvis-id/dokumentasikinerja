@@ -17,7 +17,9 @@
     <script src="https://unpkg.com/leaflet-geosearch@3.11.0/dist/bundle.min.js"></script>
 
     <style>
-        /* CSS BASE */
+        /* ==========================================
+           CSS BASE & LAYOUT
+           ========================================== */
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { 
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
@@ -37,7 +39,7 @@
             font-weight: bold; display: flex; justify-content: space-between; align-items: center;
         }
 
-        /* INPUT SECTIONS */
+        /* LOKASI & GPS */
         .input-group { padding: 12px; border-bottom: 1px solid #f0f0f0; }
         .label-mini { font-size: 10px; font-weight: 700; display: block; margin-bottom: 5px; color: #95a5a6; text-transform: uppercase; }
         
@@ -46,7 +48,6 @@
             padding: 8px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;
             margin-bottom: 8px; font-size: 10px;
         }
-
         .gps-res {
             width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;
             font-size: 10px; background: #fafafa; color: #2980b9; font-weight: bold; margin-bottom: 5px;
@@ -57,7 +58,7 @@
         }
         .date-display { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; background: #fdfdfd; font-weight: bold; }
 
-        /* PHOTO GRID */
+        /* GRID PHOTO (DIPERBAIKI) */
         .grid-header {
             display: grid; grid-template-columns: 1fr 1fr 1fr;
             text-align: center; background: #ecf0f1 !important;
@@ -70,11 +71,25 @@
         .photo-actions { display: flex; gap: 4px; margin-bottom: 8px; }
         .btn-photo { padding: 5px 8px; font-size: 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background: white; }
 
+        /* Preview Foto Mengikuti Proporsi (Auto Height) */
         .image-preview {
-            width: 100%; height: 130px; border: 2px dashed #ecf0f1; border-radius: 4px;
-            display: flex; justify-content: center; align-items: center; background: #fafafa; overflow: hidden;
+            width: 100%; 
+            min-height: 100px; /* Minimal tinggi sebelum ada foto */
+            border: 2px dashed #ecf0f1; 
+            border-radius: 4px;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            background: #fafafa; 
+            overflow: hidden;
         }
-        .image-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .image-preview img { 
+            width: 100%;      /* Penuh kiri ke kanan */
+            height: auto;     /* Tinggi otomatis mengikuti foto asli */
+            display: block;
+            object-fit: contain; 
+        }
+        .image-preview span { color: #bdc3c7; font-size: 9px; }
 
         /* KETERANGAN (AUTO-RESIZE) */
         .footer-section { padding: 12px; }
@@ -91,7 +106,11 @@
         .actions { display: flex; flex-direction: column; gap: 10px; margin: 30px 0 60px 0; }
         .btn-add { background: #3498db !important; color: white; padding: 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
         .btn-print { background: #2ecc71 !important; color: white; padding: 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        #btn-install { display: none; background: #00d2ff !important; color: #1a1a1a; padding: 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(0,210,255,0.3); }
+        #btn-install { 
+            display: none; background: #00d2ff !important; color: #1a1a1a; padding: 15px; 
+            border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; 
+            box-shadow: 0 4px 10px rgba(0,210,255,0.3); 
+        }
 
         /* MAP MODAL */
         #map-modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); }
@@ -99,13 +118,15 @@
         #map-container { height: 480px; width: 100%; }
         .btn-my-location { position: absolute; top: 70px; right: 10px; z-index: 1000; background: white; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; padding: 10px; cursor: pointer; font-weight: bold; }
 
+        /* PRINT CONFIG */
         @media print {
             .actions, .btn-map-trigger, .photo-actions, input[type="date"], #map-modal, .btn-remove, .leaflet-control-container, .btn-my-location, #btn-install { display: none !important; }
             body { padding: 0; background: white; }
             .job-item { border: 1px solid #000; margin-bottom: 30px; box-shadow: none; page-break-inside: auto; }
             .footer-section textarea { display: none !important; }
             .print-text-output { display: block !important; border: 1px solid #333 !important; }
-            .address-output { border: none; background: transparent; padding: 0; font-weight: bold; color: black; margin-top: 5px;}
+            .address-output { border: none; background: transparent; padding: 0; color: black; font-weight: bold; margin-top: 5px;}
+            .image-preview { border: 1px solid #eee; min-height: auto; }
         }
     </style>
 </head>
@@ -126,8 +147,8 @@
         <button class="btn-my-location" onclick="useCurrentLocation()">📍 Lokasi Saya</button>
         <div id="map-container"></div>
         <div style="padding:15px; text-align:right; border-top:1px solid #eee;">
-            <button onclick="closeMap()" style="padding:10px 15px; background:#95a5a6; color:white; border:none; border-radius:4px;">Batal</button>
-            <button onclick="confirmLocation()" style="padding:10px 15px; background:#27ae60; color:white; border:none; border-radius:4px; font-weight:bold;">Simpan Lokasi</button>
+            <button onclick="closeMap()" style="padding:10px 15px; background:#95a5a6; color:white; border:none; border-radius:4px; cursor:pointer;">Batal</button>
+            <button onclick="confirmLocation()" style="padding:10px 15px; background:#27ae60; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">Simpan Lokasi</button>
         </div>
     </div>
 </div>
@@ -176,16 +197,16 @@
             <div class="job-item" id="item-${itemCount}">
                 <div class="header-main">
                     <span>ITEM #${itemCount}</span>
-                    <button class="btn-remove" onclick="this.closest('.job-item').remove()" style="background:transparent; color:white; border:1px solid white; border-radius:3px; padding:2px 6px; font-size:9px; cursor:pointer;">Hapus</button>
+                    <button class="btn-remove" onclick="this.closest('.job-item').remove()" style="background:transparent; color:white; border:1px solid white; border-radius:3px; padding:2px 8px; font-size:10px; cursor:pointer;">Hapus</button>
                 </div>
                 <div class="input-group">
-                    <label class="label-mini">Lokasi:</label>
+                    <label class="label-mini">Titik Lokasi & Alamat:</label>
                     <div class="input-row">
                         <button class="btn-map-trigger" onclick="openMap('gps-res-${itemCount}', 'addr-res-${itemCount}')">🗺️ Cari Lokasi</button>
                         <input type="text" class="gps-res" id="gps-res-${itemCount}" readonly placeholder="Koordinat GPS...">
                         <div class="address-output" id="addr-res-${itemCount}">Alamat muncul otomatis...</div>
                     </div>
-                    <label class="label-mini" style="margin-top:10px;">Tanggal:</label>
+                    <label class="label-mini" style="margin-top:10px;">Waktu Pekerjaan:</label>
                     <div class="date-display">${todayFormatted}</div>
                 </div>
                 <div class="grid-header"><div>SEBELUM</div><div>PROSES</div><div>SESUDAH</div></div>
@@ -199,7 +220,7 @@
                         </div>`).join('')}
                 </div>
                 <div class="footer-section">
-                    <label class="label-mini">Keterangan:</label>
+                    <label class="label-mini">Keterangan Pekerjaan:</label>
                     <textarea id="ta-${itemCount}" oninput="autoResize(this)" placeholder="Detail pekerjaan..."></textarea>
                     <div id="print-ta-${itemCount}" class="print-text-output"></div>
                 </div>
@@ -210,7 +231,11 @@
     function handleImageUpload(input, previewId) {
         const file = input.files[0]; if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => document.getElementById(previewId).innerHTML = `<img src="${e.target.result}">`;
+        reader.onload = (e) => {
+            const preview = document.getElementById(previewId);
+            preview.style.border = "none"; // Hapus dashed border saat ada gambar
+            preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+        };
         reader.readAsDataURL(file);
     }
 
@@ -234,6 +259,7 @@
     function closeMap() { document.getElementById('map-modal').style.display = 'none'; tempCoords = null; }
 
     function useCurrentLocation() {
+        if (!navigator.geolocation) return alert("GPS tidak didukung");
         navigator.geolocation.getCurrentPosition((pos) => {
             const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             map.setView(latlng, 17); setMarker(latlng);
