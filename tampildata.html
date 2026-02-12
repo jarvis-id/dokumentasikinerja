@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riwayat Laporan - DokKiner</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; padding-bottom: 50px; }
+        .navbar { display: flex; justify-content: space-around; background: #34495e; padding: 12px 0; position: sticky; top: 0; z-index: 9999; }
+        .navbar a { color: white; text-decoration: none; font-weight: bold; opacity: 0.7; }
+        .navbar a.active { opacity: 1; border-bottom: 2px solid #00d2ff; }
+
+        .container { max-width: 900px; margin: auto; padding: 15px; }
+        .filter-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        .report-item { background: white; padding: 15px; border-radius: 8px; margin-bottom: 12px; border-left: 5px solid #3498db; position: relative; cursor: pointer; }
+        .report-item:hover { background: #f9f9f9; }
+        .report-info { font-weight: bold; font-size: 14px; margin-bottom: 5px; }
+        .report-meta { font-size: 11px; color: #7f8c8d; }
+        
+        .btn-del { position: absolute; right: 15px; top: 15px; background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        
+        label { font-size: 10px; font-weight: bold; text-transform: uppercase; color: #95a5a6; }
+        select, input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="index.html">📝 Form Input</a>
+    <a href="tampildata.html" class="active">📂 Riwayat Laporan</a>
+</nav>
+
+<div class="container">
+    <h3>📂 Riwayat Laporan</h3>
+    
+    <div class="filter-card">
+        <div class="filter-grid">
+            <div>
+                <label>Bulan</label>
+                <select id="f-month" onchange="renderHistory()">
+                    <option value="">Semua Bulan</option>
+                    <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
+                    <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
+                    <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
+                    <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+                </select>
+            </div>
+            <div>
+                <label>Tanggal Spesifik</label>
+                <input type="date" id="f-date" onchange="renderHistory()">
+            </div>
+        </div>
+    </div>
+
+    <div id="history-list"></div>
+</div>
+
+<script>
+    function renderHistory() {
+        const listDiv = document.getElementById('history-list');
+        const fMonth = document.getElementById('f-month').value;
+        const fDate = document.getElementById('f-date').value;
+        
+        let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
+
+        if (fMonth) history = history.filter(h => h.month === fMonth);
+        if (fDate) history = history.filter(h => h.date === fDate);
+
+        if (history.length === 0) {
+            listDiv.innerHTML = "<p style='text-align:center; color:#999; margin-top:50px;'>Data tidak ditemukan.</p>";
+            return;
+        }
+
+        listDiv.innerHTML = history.reverse().map(h => `
+            <div class="report-item" onclick="restoreData(${h.id})">
+                <button class="btn-del" onclick="deleteItem(event, ${h.id})">Hapus</button>
+                <div class="report-info">LAPORAN - ${h.timestamp}</div>
+                <div class="report-meta">Total Item Pekerjaan: ${h.data.length}</div>
+                <div class="report-meta">ID: ${h.id}</div>
+            </div>
+        `).join('');
+    }
+
+    function deleteItem(event, id) {
+        event.stopPropagation();
+        if (!confirm("Hapus laporan ini permanen?")) return;
+        let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
+        history = history.filter(h => h.id !== id);
+        localStorage.setItem('lapdok_history', JSON.stringify(history));
+        renderHistory();
+    }
+
+    function restoreData(id) {
+        if (!confirm("Muat laporan ini ke Form Utama untuk diedit/cetak?")) return;
+        const history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
+        const entry = history.find(h => h.id === id);
+        if (entry) {
+            localStorage.setItem('lapdok_draft', JSON.stringify(entry.data));
+            window.location.href = "index.html";
+        }
+    }
+
+    window.onload = renderHistory;
+</script>
+</body>
+</html>
