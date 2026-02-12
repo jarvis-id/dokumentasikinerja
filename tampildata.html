@@ -30,7 +30,7 @@
         .btn-del { position: absolute; right: 10px; top: 10px; background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; }
 
         /* ==========================================
-           CSS KHUSUS CETAK (PRINT PDF) - 3 ITEM PER HALAMAN
+           CSS KHUSUS CETAK (PRINT PDF)
            ========================================== */
         #print-area { display: none; }
 
@@ -39,14 +39,42 @@
             body { background: white; padding: 0; margin: 0; }
             #print-area { display: block !important; }
             
-            /* Paksa 3 item per halaman menggunakan page-break */
-            .page-container { page-break-after: always; }
+            /* Kontainer Halaman */
+            .page-container { 
+                page-break-after: always; 
+                height: 100vh; 
+                display: flex; 
+                flex-direction: column;
+                padding: 10mm; /* Margin standar cetak */
+                position: relative;
+            }
             .page-container:last-child { page-break-after: auto; }
+
+            /* Header Halaman Cetak */
+            .print-header-global {
+                text-align: center;
+                font-size: 16px;
+                font-weight: bold;
+                border-bottom: 2px solid #000;
+                margin-bottom: 15px;
+                padding-bottom: 10px;
+                text-transform: uppercase;
+            }
+
+            /* Footer Halaman (Nomor Halaman) */
+            .print-footer-page {
+                position: absolute;
+                bottom: 10mm;
+                right: 10mm;
+                font-size: 10px;
+                font-weight: bold;
+                color: #000;
+            }
 
             .print-job-item { 
                 border: 1px solid #000; 
-                margin-bottom: 10px; 
-                height: 31%; /* Mengatur tinggi agar pas 3 item */
+                margin-bottom: 15px; 
+                flex: 1; /* Agar 3 item membagi ruang halaman secara merata */
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
@@ -92,7 +120,7 @@
             <div>
                 <label>Tanggal</label>
                 <input type="date" id="f-date" onchange="updateUI()">
-                <span class="reset-link" onclick="resetDate()">Tampilkan Semua Tanggal</span>
+                <span class="reset-link" onclick="resetDate()">Semua Tanggal</span>
             </div>
         </div>
         <button class="btn-print-full" onclick="generatePrintView()">🖨️ Cetak Laporan Detail</button>
@@ -102,6 +130,7 @@
 </div>
 
 <div id="print-area">
+    <!-- Konten cetak akan di-render di sini oleh JavaScript -->
     <div id="print-content-target"></div>
 </div>
 
@@ -153,7 +182,7 @@
         const target = document.getElementById('print-content-target');
         target.innerHTML = ''; 
 
-        // Flatten semua item pekerjaan dari laporan yang terfilter
+        // Flatten semua item pekerjaan
         let allJobItems = [];
         data.forEach(report => {
             report.data.forEach(job => {
@@ -161,11 +190,21 @@
             });
         });
 
-        // Bagi menjadi kelompok berisi 3 item per halaman
+        // Hitung total halaman (3 item per halaman)
+        const totalPages = Math.ceil(allJobItems.length / 3);
+
+        // Render per halaman
         for (let i = 0; i < allJobItems.length; i += 3) {
+            const currentPageNum = Math.floor(i / 3) + 1;
             const pageContainer = document.createElement('div');
             pageContainer.className = 'page-container';
             
+            // Header Judul (Muncul di setiap halaman)
+            const headerHtml = `<div class="print-header-global">DOKUMENTASI LAPORAN KINERJA</div>`;
+            
+            // Footer Nomor Halaman (Muncul di sudut kanan bawah setiap halaman)
+            const footerHtml = `<div class="print-footer-page">Halaman ${currentPageNum} dari ${totalPages}</div>`;
+
             const chunk = allJobItems.slice(i, i + 3);
             const chunkHtml = chunk.map((item, idx) => `
                 <div class="print-job-item">
@@ -193,7 +232,7 @@
                 </div>
             `).join('');
 
-            pageContainer.innerHTML = chunkHtml;
+            pageContainer.innerHTML = headerHtml + chunkHtml + footerHtml;
             target.appendChild(pageContainer);
         }
 
