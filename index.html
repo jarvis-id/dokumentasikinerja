@@ -58,7 +58,7 @@
         }
         .date-display { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; background: #fdfdfd; font-weight: bold; }
 
-        /* GRID PHOTO (DIPERBAIKI) */
+        /* GRID PHOTO */
         .grid-header {
             display: grid; grid-template-columns: 1fr 1fr 1fr;
             text-align: center; background: #ecf0f1 !important;
@@ -71,10 +71,10 @@
         .photo-actions { display: flex; gap: 4px; margin-bottom: 8px; }
         .btn-photo { padding: 5px 8px; font-size: 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background: white; }
 
-        /* Preview Foto Mengikuti Proporsi (Auto Height) */
+        /* Preview Foto - Disusutkan otomatis jika terlalu tinggi */
         .image-preview {
             width: 100%; 
-            min-height: 100px; /* Minimal tinggi sebelum ada foto */
+            height: 180px; /* Ukuran kotak default tetap konsisten */
             border: 2px dashed #ecf0f1; 
             border-radius: 4px;
             display: flex; 
@@ -82,12 +82,15 @@
             align-items: center; 
             background: #fafafa; 
             overflow: hidden;
+            margin-top: 5px;
         }
         .image-preview img { 
-            width: 100%;      /* Penuh kiri ke kanan */
-            height: auto;     /* Tinggi otomatis mengikuti foto asli */
+            max-width: 100%;  /* Tidak melebihi lebar kolom */
+            max-height: 100%; /* Disusutkan secara otomatis jika sangat tinggi */
+            width: auto;      /* Menjaga proporsi */
+            height: auto;     /* Menjaga proporsi */
             display: block;
-            object-fit: contain; 
+            object-fit: contain; /* Seluruh foto terlihat tanpa terpotong */
         }
         .image-preview span { color: #bdc3c7; font-size: 9px; }
 
@@ -126,7 +129,7 @@
             .footer-section textarea { display: none !important; }
             .print-text-output { display: block !important; border: 1px solid #333 !important; }
             .address-output { border: none; background: transparent; padding: 0; color: black; font-weight: bold; margin-top: 5px;}
-            .image-preview { border: 1px solid #eee; min-height: auto; }
+            .image-preview { border: 1px solid #eee; height: 180px; background: white; }
         }
     </style>
 </head>
@@ -233,7 +236,7 @@
         const reader = new FileReader();
         reader.onload = (e) => {
             const preview = document.getElementById(previewId);
-            preview.style.border = "none"; // Hapus dashed border saat ada gambar
+            preview.style.border = "none";
             preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
         };
         reader.readAsDataURL(file);
