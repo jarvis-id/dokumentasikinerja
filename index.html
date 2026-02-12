@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Form Laporan Dokumentasi Pekerjaan</title>
+    
+    <!-- Leaflet & Geosearch -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.11.0/dist/geosearch.css" />
+    <script src="https://unpkg.com/leaflet-geosearch@3.11.0/dist/bundle.min.js"></script>
+
+    <style>
+        /* ==========================================
+           CSS BASE & LAYOUT
+           ========================================== */
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { 
+            font-family: 'Segoe UI', Helvetica, Arial, sans-serif; 
+            margin: 0; padding: 10px; 
+            background-color: #f4f6f9; 
+            color: #333;
+            font-size: 11px;
+        }
+        .container { width: 100%; max-width: 900px; margin: auto; }
+        h3.main-title { text-align: center; font-size: 14px; text-transform: uppercase; margin: 10px 0 15px 0; }
+
+        /* ITEM CARD */
+        .job-item {
+            background: white;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            page-break-inside: avoid; /* Berusaha agar satu item tidak terpotong ke halaman baru */
+        }
+        .header-main {
+            padding: 8px 12px;
+            background: #34495e !important;
+            color: #fff !important;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* INPUT SECTIONS */
+        .input-group { padding: 10px; border-bottom: 1px solid #eee; }
+        .label-mini { font-size: 10px; font-weight: bold; display: block; margin-bottom: 4px; color: #555; }
+        .input-row { display: flex; gap: 5px; align-items: center; margin-bottom: 8px; }
+
+        .btn-map-trigger {
+            background-color: #f39c12 !important;
+            color: white !important;
+            padding: 6px 10px; border: none; border-radius: 3px;
+            cursor: pointer; font-size: 10px; font-weight: bold;
+        }
+        input[type="text"] {
+            flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 3px;
+            font-size: 10px; background: #fff; min-width: 0;
+        }
+
+        /* DATE PICKER CUSTOM */
+        .date-container { position: relative; flex: 1; display: flex; align-items: center; }
+        .date-container input[type="date"] {
+            position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+            opacity: 0; cursor: pointer; z-index: 2;
+        }
+        .date-display {
+            width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 3px;
+            font-size: 10px; background: #eee; color: #333;
+        }
+
+        /* PHOTO GRID */
+        .grid-header {
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            text-align: center; background: #f8f9fa !important;
+            font-size: 10px; font-weight: bold;
+            border-top: 1px solid #eee; border-bottom: 1px solid #eee;
+        }
+        .grid-header div { padding: 8px 2px; border-right: 1px solid #eee; }
+        .grid-content { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+        .column { padding: 8px 4px; border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; }
+        .column:last-child { border-right: none; }
+
+        .photo-actions { display: flex; gap: 4px; margin-bottom: 5px; }
+        .btn-photo { 
+            padding: 4px 8px; font-size: 9px; border: 1px solid #ccc; 
+            border-radius: 3px; cursor: pointer; background: #fff;
+        }
+
+        .image-preview {
+            width: 100%; height: 120px; border: 1px dashed #ccc;
+            display: flex; justify-content: center; align-items: center;
+            background: #fafafa; border-radius: 2px; overflow: hidden;
+        }
+        .image-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .image-preview span { color: #ccc; font-size: 10px; }
+
+        /* KETERANGAN SECTION (SOLUSI AUTO-RESIZE) */
+        .footer-section { padding: 10px; background: #fff; }
+        
+        .footer-section textarea { 
+            width: 100%; 
+            min-height: 60px; 
+            padding: 8px; 
+            border: 1px solid #ccc;
+            font-size: 11px; 
+            line-height: 1.5;
+            resize: none; /* Matikan resize manual user */
+            display: block;
+            border-radius: 4px;
+            overflow: hidden; /* Sembunyikan scroll agar memanjang kebawah */
+            transition: height 0.1s ease;
+        }
+
+        .print-text-output {
+            display: none; /* Sembunyikan di layar web */
+            white-space: pre-wrap; /* Jaga enter/baris baru */
+            word-wrap: break-word;
+            font-size: 11px;
+            line-height: 1.5;
+            padding: 8px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            min-height: 40px;
+        }
+
+        /* BUTTON ACTIONS */
+        .actions { display: flex; flex-direction: column; gap: 8px; margin: 20px 0 40px 0; }
+        .btn-add { background: #3498db !important; color: white !important; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .btn-print { background: #27ae60 !important; color: white !important; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+
+        /* MAP MODAL */
+        #map-modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
+        .modal-content { background: white; margin: 2% auto; width: 95%; max-width: 700px; border-radius: 8px; overflow: hidden; }
+        #map-container { height: 400px; width: 100%; }
+
+        /* ==========================================
+           ATURAN CETAK (PRINT SETTINGS) 
+           ========================================== */
+        @media print {
+            .actions, .btn-map-trigger, .photo-actions, input[type="date"], #map-modal, .btn-remove { 
+                display: none !important; 
+            }
+            
+            body { background: white; padding: 0; margin: 0; }
+            .container { max-width: 100%; }
+            
+            .job-item { 
+                border: 1px solid #333; 
+                box-shadow: none; 
+                margin-bottom: 20px; 
+                page-break-inside: auto; /* Izinkan pindah halaman jika teks sangat panjang */
+            }
+
+            /* Tukar tampilan Textarea ke DIV */
+            .footer-section textarea { display: none !important; }
+            .print-text-output { 
+                display: block !important; 
+                border: 1px solid #333 !important;
+                height: auto !important; 
+            }
+
+            input[type="text"], .date-display { border: none; padding: 0; font-weight: bold; background: transparent; }
+            .header-main { background: #34495e !important; color: white !important; -webkit-print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h3 class="main-title">Laporan Dokumentasi Pekerjaan</h3>
+    
+    <!-- Wadah Item Pekerjaan -->
+    <div id="job-container"></div>
+    
+    <!-- Tombol Navigasi -->
+    <div class="actions">
+        <button class="btn-add" onclick="addNewJobItem()">+ Tambah Item Pekerjaan</button>
+        <button class="btn-print" onclick="preparePrint()">🖨️ Cetak Halaman (Simpan PDF)</button>
+    </div>
+</div>
+
+<!-- Modal Peta -->
+<div id="map-modal">
+    <div class="modal-content">
+        <div id="map-container"></div>
+        <div class="modal-footer" style="padding:15px; text-align:right; border-top:1px solid #eee;">
+            <button onclick="closeMap()" style="padding:10px 20px; background:#95a5a6; color:white; border:none; border-radius:4px; cursor:pointer;">Batal</button>
+            <button onclick="confirmLocation()" style="padding:10px 20px; background:#27ae60; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">Simpan Lokasi</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let itemCount = 0;
+    let map, marker;
+    let activeInputId = null;
+    let tempCoords = null;
+
+    // Fungsi Format Tanggal Indonesia
+    function formatToIndonesian(dateObj) {
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        return `${days[dateObj.getDay()]}, ${String(dateObj.getDate()).padStart(2, '0')} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+    }
+
+    // Fungsi Auto-Resize Textarea
+    function autoResize(textarea) {
+        textarea.style.height = 'auto'; // Reset height
+        textarea.style.height = textarea.scrollHeight + 'px'; // Set ke tinggi konten
+    }
+
+    // Fungsi Tambah Item Pekerjaan Dinamis
+    function addNewJobItem() {
+        itemCount++;
+        const container = document.getElementById('job-container');
+        const today = new Date();
+        const todayISO = today.toISOString().split('T')[0];
+        const todayFormatted = formatToIndonesian(today);
+        
+        const jobHtml = `
+            <div class="job-item" id="item-${itemCount}">
+                <div class="header-main">
+                    <span>ITEM #${itemCount}</span>
+                    <button class="btn-remove" onclick="this.closest('.job-item').remove()" style="background:#e74c3c; color:white; border:none; border-radius:3px; padding:2px 8px; font-size:10px; cursor:pointer;">Hapus</button>
+                </div>
+                
+                <div class="input-group">
+                    <label class="label-mini">Koordinat Lokasi:</label>
+                    <div class="input-row">
+                        <button class="btn-map-trigger" onclick="openMap('gps-res-${itemCount}')">🗺️ Pilih Lokasi</button>
+                        <input type="text" id="gps-res-${itemCount}" readonly placeholder="Link koordinat akan muncul di sini...">
+                    </div>
+
+                    <label class="label-mini" style="margin-top:8px;">Tanggal Pekerjaan:</label>
+                    <div class="input-row">
+                        <div class="date-container">
+                            <input type="date" value="${todayISO}" onchange="this.nextElementSibling.innerText = formatToIndonesian(new Date(this.value))">
+                            <div class="date-display">${todayFormatted}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-header">
+                    <div>SEBELUM</div><div>PROSES</div><div>SESUDAH</div>
+                </div>
+
+                <div class="grid-content">
+                    ${[1,2,3].map(i => `
+                        <div class="column">
+                            <div class="photo-actions">
+                                <button class="btn-photo" onclick="document.getElementById('cam-${i}-${itemCount}').click()">📷 Cam</button>
+                                <button class="btn-photo" onclick="document.getElementById('gal-${i}-${itemCount}').click()">📁 Gal</button>
+                            </div>
+                            <input type="file" id="cam-${i}-${itemCount}" accept="image/*" capture="environment" style="display:none" onchange="handleImageUpload(this, 'p${i}-${itemCount}')">
+                            <input type="file" id="gal-${i}-${itemCount}" accept="image/*" style="display:none" onchange="handleImageUpload(this, 'p${i}-${itemCount}')">
+                            <div class="image-preview" id="p${i}-${itemCount}"><span>Preview</span></div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="footer-section">
+                    <label class="label-mini">Keterangan:</label>
+                    <textarea id="ta-${itemCount}" 
+                              placeholder="Ketik keterangan pekerjaan di sini..." 
+                              oninput="autoResize(this)"></textarea>
+                    <div id="print-ta-${itemCount}" class="print-text-output"></div>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', jobHtml);
+    }
+
+    // Fungsi Upload & Preview Gambar
+    function handleImageUpload(input, previewId) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            document.getElementById(previewId).innerHTML = `<img src="${e.target.result}">`;
+        };
+    }
+
+    // Fungsi Peta (Leaflet)
+    function initMap() {
+        map = L.map('map-container').setView([-2.5489, 118.0149], 5); // Center Indonesia
+        L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            attribution: '© Google Hybrid'
+        }).addTo(map);
+
+        map.on('click', (e) => {
+            tempCoords = `${e.latlng.lat.toFixed(6)},${e.latlng.lng.toFixed(6)}`;
+            if (marker) {
+                marker.setLatLng(e.latlng);
+            } else {
+                marker = L.marker(e.latlng).addTo(map);
+            }
+        });
+    }
+
+    function openMap(inputId) {
+        activeInputId = inputId;
+        document.getElementById('map-modal').style.display = 'block';
+        if (!map) initMap();
+        setTimeout(() => { map.invalidateSize(); }, 300);
+    }
+
+    function closeMap() { document.getElementById('map-modal').style.display = 'none'; }
+
+    function confirmLocation() {
+        if (tempCoords) {
+            document.getElementById(activeInputId).value = `https://www.google.com/maps/search/?api=1&query=${tempCoords}`;
+            closeMap();
+        } else {
+            alert("Silakan klik pada peta untuk menentukan titik lokasi.");
+        }
+    }
+
+    // Fungsi Persiapan Cetak (Sinkronisasi Teks)
+    function preparePrint() {
+        const items = document.querySelectorAll('.job-item');
+        let hasContent = false;
+
+        items.forEach((item) => {
+            const textarea = item.querySelector('textarea');
+            const printDiv = item.querySelector('.print-text-output');
+            
+            // Masukkan teks dari textarea ke div khusus cetak
+            const textValue = textarea.value.trim();
+            printDiv.innerText = textValue !== "" ? textValue : "-";
+            hasContent = true;
+        });
+
+        if (!hasContent) {
+            alert("Tambahkan minimal satu item pekerjaan.");
+            return;
+        }
+
+        // Delay sedikit untuk render DOM sebelum dialog print muncul
+        setTimeout(() => {
+            window.print();
+        }, 500);
+    }
+
+    // Jalankan Item pertama saat load
+    window.onload = addNewJobItem;
+</script>
+
+</body>
+</html>
