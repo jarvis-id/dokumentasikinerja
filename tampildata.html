@@ -24,29 +24,30 @@
         .btn-del { position: absolute; right: 10px; top: 10px; background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; }
 
         /* ==========================================
-           CSS CETAK (PRINT PDF) - FIX OVERFLOW
+           CSS CETAK (PRINT PDF) - FIX FINAL
            ========================================== */
         #print-area { display: none; }
 
         @media print {
             @page { size: A4; margin: 0; }
+            html, body { height: 100%; margin: 0 !important; padding: 0 !important; overflow: hidden; }
             .navbar, .filter-card, #history-list, .btn-del, .btn-print-full, .reset-link { display: none !important; }
-            body { background: white; padding: 0; margin: 0; }
-            #print-area { display: block !important; }
+            
+            #print-area { display: block !important; position: absolute; top: 0; left: 0; width: 100%; }
             
             .page-container { 
-                page-break-after: always; 
-                page-break-inside: avoid;
-                height: 297mm; 
+                break-after: page; /* Standar modern untuk ganti halaman */
+                height: 296mm; /* Sedikit kurang dari 297mm untuk safety buffer */
                 width: 210mm;
                 padding: 10mm; 
+                margin: 0;
                 position: relative; 
-                overflow: hidden;
                 display: flex;
                 flex-direction: column;
+                background: white;
             }
             
-            .page-container:last-child { page-break-after: auto; }
+            .page-container:last-child { break-after: auto; }
 
             .print-header-global {
                 text-align: center; font-size: 14px; font-weight: bold;
@@ -61,10 +62,9 @@
             .print-job-item { 
                 border: 1px solid #000; 
                 margin-bottom: 8px; 
-                height: 78mm; /* Dikurangi dari 82mm ke 78mm untuk ruang aman */
+                height: 77mm; /* Tinggi dikurangi lagi agar aman dari overflow */
                 display: flex;
                 flex-direction: column;
-                overflow: hidden;
             }
             
             .print-job-header { background: #34495e !important; color: white !important; padding: 4px 10px; font-weight: bold; font-size: 11px; }
@@ -75,17 +75,16 @@
                 border-bottom: 1px solid #000; 
                 line-height: 1.2; 
                 background: #f9f9f9 !important;
-                word-break: break-all; /* Mencegah teks panjang mendorong layout */
-                max-height: 12mm; /* Kunci tinggi maksimal alamat/gps */
+                word-break: break-all;
                 overflow: hidden;
             }
             
             .print-photo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; flex-grow: 1; border-bottom: 1px solid #000; }
             .print-photo-col { padding: 3px; text-align: center; border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-            .print-photo-label { font-size: 7.5px; font-weight: bold; margin-bottom: 2px; }
+            .print-photo-label { font-size: 7px; font-weight: bold; margin-bottom: 1px; }
             
             .print-photo-box { 
-                width: 38mm; height: 38mm; /* Perkecil sedikit agar aman */
+                width: 38mm; height: 38mm; 
                 border: 1px solid #ccc; 
                 display: flex; align-items: center; justify-content: center; 
                 background: #fff; overflow: hidden;
@@ -95,7 +94,7 @@
             .print-desc-box { 
                 padding: 5px 10px; 
                 font-size: 9px; 
-                height: 15mm; 
+                height: 14mm; 
                 overflow: hidden; 
                 line-height: 1.2; 
             }
@@ -121,6 +120,7 @@
     <div id="history-list"></div>
 </div>
 
+<!-- Container Print (Tanpa Spasi di dalam tag untuk mencegah halaman kosong) -->
 <div id="print-area"><div id="print-content-target"></div></div>
 
 <script>
@@ -149,7 +149,8 @@
 
     function generatePrintView() {
         const data = getFilteredData(); if(data.length === 0) return alert("Data kosong.");
-        const target = document.getElementById('print-content-target'); target.innerHTML = ''; 
+        const target = document.getElementById('print-content-target'); 
+        target.innerHTML = ''; // Kosongkan target
 
         let allJobItems = [];
         data.forEach(report => { report.data.forEach(job => { allJobItems.push({ ...job, timestamp: report.timestamp }); }); });
@@ -158,7 +159,9 @@
 
         for (let i = 0; i < allJobItems.length; i += 3) {
             const pageNum = Math.floor(i / 3) + 1;
-            const pageContainer = document.createElement('div'); pageContainer.className = 'page-container';
+            const pageContainer = document.createElement('div'); 
+            pageContainer.className = 'page-container';
+            
             const chunk = allJobItems.slice(i, i + 3);
             const chunkHtml = chunk.map((item, idx) => `
                 <div class="print-job-item">
@@ -172,9 +175,11 @@
                     <div class="print-desc-box"><strong>KETERANGAN:</strong> ${item.desc || '-'}</div>
                 </div>`).join('');
 
+            // Rakit konten secara langsung tanpa line break tambahan
             pageContainer.innerHTML = `<div class="print-header-global">DOKUMENTASI LAPORAN KINERJA</div><div style="flex-grow:1;">${chunkHtml}</div><div class="print-footer-page">Halaman ${pageNum} dari ${totalPages}</div>`;
             target.appendChild(pageContainer);
         }
+
         setTimeout(() => { window.print(); }, 700);
     }
 
