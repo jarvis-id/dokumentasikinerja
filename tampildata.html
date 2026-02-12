@@ -3,32 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riwayat Laporan - DokKiner</title>
+    <title>Cetak Riwayat Detail - DokKiner</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; padding-bottom: 50px; color: #333; }
+        /* ==========================================
+           CSS UNTUK TAMPILAN LAYAR (SCREEN)
+           ========================================== */
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; color: #333; }
+        
         .navbar { display: flex; justify-content: space-around; background: #34495e; padding: 12px 0; position: sticky; top: 0; z-index: 9999; }
         .navbar a { color: white; text-decoration: none; font-weight: bold; opacity: 0.7; font-size: 13px; }
         .navbar a.active { opacity: 1; border-bottom: 2px solid #00d2ff; }
-        .container { max-width: 900px; margin: auto; padding: 15px; }
-        .filter-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-        label { font-size: 10px; font-weight: bold; color: #95a5a6; text-transform: uppercase; }
-        select, input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; }
-        
-        .report-item { background: white; padding: 15px; border-radius: 8px; margin-bottom: 12px; border-left: 5px solid #3498db; position: relative; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .btn-del { position: absolute; right: 15px; top: 15px; background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 10px; }
-        
-        .btn-rekap { background: #27ae60; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; font-weight: bold; margin-top: 15px; cursor: pointer; }
 
-        /* TABEL CETAK REKAP */
-        #print-rekap-area { display: none; }
+        .container { max-width: 900px; margin: auto; padding: 15px; }
+        .filter-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+        .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 5px; }
+        label { font-size: 10px; font-weight: bold; color: #95a5a6; text-transform: uppercase; }
+        select, input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
+
+        .reset-link { font-size: 10px; color: #3498db; cursor: pointer; text-decoration: underline; display: inline-block; margin-top: 5px; }
+
+        .btn-print-full { background: #27ae60; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px; margin-top: 15px; }
+        .btn-print-full:hover { background: #219150; }
+
+        .status-info { background: #ebf5fb; padding: 10px; border-radius: 4px; border-left: 4px solid #3498db; margin-bottom: 15px; font-size: 12px; color: #2c3e50; }
+
+        .report-card-preview { background: white; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 5px solid #3498db; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; }
+        .report-card-preview:hover { background: #fdfdfd; border-color: #2980b9; }
+        .title { font-weight: bold; font-size: 13px; margin-bottom: 3px; }
+        .meta { font-size: 11px; color: #7f8c8d; }
+        .btn-del { position: absolute; right: 10px; top: 10px; background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; }
+
+        /* ==========================================
+           CSS KHUSUS CETAK (PRINT PDF)
+           ========================================== */
+        #print-area { display: none; }
+
         @media print {
-            .navbar, .filter-card, .report-item, .btn-rekap { display: none !important; }
-            #print-rekap-area { display: block !important; background: white; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 10px; }
-            th { background-color: #eee !important; }
-            .rekap-title { text-align: center; text-transform: uppercase; font-size: 14px; font-weight: bold; }
+            .navbar, .filter-card, #history-list, .btn-del, .btn-print-full, .reset-link { display: none !important; }
+            body { background: white; padding: 0; margin: 0; }
+            #print-area { display: block !important; }
+            .print-page-title { text-align: center; font-size: 18px; text-transform: uppercase; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+            .print-report-block { page-break-after: always; margin-bottom: 30px; border: 1px solid #000; padding: 10px; }
+            .report-header { background: #34495e !important; color: white !important; padding: 8px; font-weight: bold; font-size: 14px; margin-bottom: 10px; }
+            .print-job-item { border: 1px solid #ccc; margin-bottom: 20px; page-break-inside: avoid; }
+            .print-job-header { background: #eee !important; padding: 5px 10px; font-weight: bold; border-bottom: 1px solid #ccc; }
+            .print-meta-data { padding: 8px; font-size: 10px; border-bottom: 1px solid #eee; line-height: 1.4; }
+            .print-photo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid #eee; }
+            .print-photo-col { padding: 5px; text-align: center; border-right: 1px solid #eee; }
+            .print-photo-label { font-size: 9px; font-weight: bold; margin-bottom: 4px; background: #f9f9f9; padding: 2px; }
+            .print-photo-box { width: 100%; aspect-ratio: 1/1; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+            .print-photo-box img { width: 100%; height: 100%; object-fit: contain; }
+            .print-desc-box { padding: 10px; font-size: 11px; white-space: pre-wrap; line-height: 1.4; }
         }
     </style>
 </head>
@@ -40,22 +66,17 @@
 </nav>
 
 <div class="container">
-    <h3>📂 Filter & Rekapitulasi</h3>
+    <h3 style="text-align:center; color: #2c3e50;">📂 Manajemen & Cetak Laporan</h3>
     
     <div class="filter-card">
         <div class="filter-grid">
             <div>
                 <label>Tahun</label>
-                <select id="f-year" onchange="renderHistory()">
-                    <option value="">Semua Tahun</option>
-                    <option value="2024">2024</option>
-                    <option value="2025">2025</option>
-                    <option value="2026">2026</option>
-                </select>
+                <select id="f-year" onchange="updateUI()"></select>
             </div>
             <div>
                 <label>Bulan</label>
-                <select id="f-month" onchange="renderHistory()">
+                <select id="f-month" onchange="updateUI()">
                     <option value="">Semua Bulan</option>
                     <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
                     <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
@@ -65,111 +86,152 @@
             </div>
             <div>
                 <label>Tanggal</label>
-                <input type="date" id="f-date" onchange="renderHistory()">
+                <input type="date" id="f-date" onchange="updateUI()">
+                <span class="reset-link" onclick="resetDate()">Tampilkan Semua Tanggal</span>
             </div>
         </div>
-        <button class="btn-rekap" onclick="printRekap()">🖨️ Cetak Rekapitulasi (Sesuai Filter)</button>
+        <button class="btn-print-full" onclick="generatePrintView()">🖨️ Cetak Semua Detail Sesuai Filter</button>
     </div>
+
+    <div id="filter-status" class="status-info"></div>
 
     <div id="history-list"></div>
+</div>
 
-    <!-- AREA CETAK REKAPITULASI (HIDDEN IN SCREEN) -->
-    <div id="print-rekap-area">
-        <div class="rekap-title">Laporan Rekapitulasi Kinerja</div>
-        <div id="rekap-info-text" style="text-align:center; margin-bottom:10px;"></div>
-        <table>
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Waktu/Tanggal</th>
-                    <th>Total Item</th>
-                    <th>Keterangan (Ringkasan)</th>
-                </tr>
-            </thead>
-            <tbody id="rekap-body"></tbody>
-        </table>
-    </div>
+<div id="print-area">
+    <div class="print-page-title">Dokumentasi Laporan Pekerjaan</div>
+    <div id="print-content-target"></div>
 </div>
 
 <script>
-    function renderHistory() {
-        const fYear = document.getElementById('f-year').value;
-        const fMonth = document.getElementById('f-month').value;
-        const fDate = document.getElementById('f-date').value;
+    // 1. Inisialisasi Dropdown Tahun
+    const yearSelect = document.getElementById('f-year');
+    const curYear = new Date().getFullYear();
+    for(let i = curYear; i >= 2024; i--) {
+        let opt = document.createElement('option');
+        opt.value = i; opt.innerHTML = i;
+        yearSelect.appendChild(opt);
+    }
+
+    // 2. Fungsi Reset Tanggal (Menjadikan "Semua Tanggal")
+    function resetDate() {
+        document.getElementById('f-date').value = "";
+        updateUI();
+    }
+
+    // 3. Logika Filter Inti
+    function getFilteredData() {
+        const fy = yearSelect.value;
+        const fm = document.getElementById('f-month').value;
+        const fd = document.getElementById('f-date').value;
+        
+        let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
+        
+        // Filter Tahun (Selalu ada karena default curYear)
+        history = history.filter(h => h.year === fy);
+
+        // Filter Bulan (Hanya jika dipilih)
+        if(fm) history = history.filter(h => h.month === fm);
+
+        // Filter Tanggal (Hanya jika dipilih, jika kosong maka tampil semua tanggal)
+        if(fd) history = history.filter(h => h.date === fd);
+
+        return history.sort((a,b) => b.id - a.id);
+    }
+
+    // 4. Update Tampilan UI List
+    function updateUI() {
+        const data = getFilteredData();
         const listDiv = document.getElementById('history-list');
+        const statusDiv = document.getElementById('filter-status');
         
-        let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
+        const fmText = document.getElementById('f-month').options[document.getElementById('f-month').selectedIndex].text;
+        const fdValue = document.getElementById('f-date').value;
 
-        // Filter Multi-Level
-        if (fYear) history = history.filter(h => h.year === fYear);
-        if (fMonth) history = history.filter(h => h.month === fMonth);
-        if (fDate) history = history.filter(h => h.date === fDate);
+        // Tampilkan status filter
+        let statusTxt = `Menampilkan data <strong>Tahun ${yearSelect.value}</strong>`;
+        if(fmText !== "Semua Bulan") statusTxt += `, <strong>Bulan ${fmText}</strong>`;
+        statusTxt += (fdValue) ? `, <strong>Tanggal ${fdValue}</strong>` : `, <strong>Semua Tanggal</strong>`;
+        statusDiv.innerHTML = statusTxt + ` (${data.length} laporan ditemukan).`;
 
-        history.sort((a, b) => b.id - a.id);
-
-        listDiv.innerHTML = history.map(h => `
-            <div class="report-item" onclick="restoreData(${h.id})">
-                <button class="btn-del" onclick="deleteItem(event, ${h.id})">Hapus</button>
-                <div style="font-weight:bold;">${h.timestamp}</div>
-                <div style="font-size:11px; color:#666;">Jumlah: ${h.data.length} Item Pekerjaan</div>
-            </div>
-        `).join('') || '<p style="text-align:center; color:#999;">Data tidak ditemukan.</p>';
-        
-        return history; // Return data terfilter untuk fungsi rekap
-    }
-
-    function printRekap() {
-        const filteredData = renderHistory();
-        if (filteredData.length === 0) return alert("Tidak ada data untuk dicetak!");
-
-        const fYear = document.getElementById('f-year').value;
-        const fMonth = document.getElementById('f-month').options[document.getElementById('f-month').selectedIndex].text;
-        const fDate = document.getElementById('f-date').value;
-
-        let info = "Laporan ";
-        if(fDate) info += `Tanggal ${fDate}`;
-        else if(fMonth !== "Semua Bulan") info += `Bulan ${fMonth} ${fYear}`;
-        else if(fYear) info += `Tahun ${fYear}`;
-        else info += "Semua Periode";
-
-        document.getElementById('rekap-info-text').innerText = info;
-
-        const tbody = document.getElementById('rekap-body');
-        tbody.innerHTML = filteredData.map((h, index) => {
-            // Gabungkan keterangan dari semua item pekerjaan sebagai ringkasan
-            const summary = h.data.map(d => d.desc.substring(0, 30) + "...").join(" | ");
-            return `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${h.timestamp}</td>
-                    <td>${h.data.length} Item</td>
-                    <td>${summary}</td>
-                </tr>
-            `;
-        }).join('');
-
-        window.print();
-    }
-
-    function deleteItem(event, id) {
-        event.stopPropagation();
-        if (!confirm("Hapus data ini?")) return;
-        let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
-        localStorage.setItem('lapdok_history', JSON.stringify(history.filter(h => h.id !== id)));
-        renderHistory();
-    }
-
-    function restoreData(id) {
-        if (!confirm("Edit/Cetak ulang detail laporan ini?")) return;
-        const history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
-        const entry = history.find(h => h.id === id);
-        if (entry) {
-            localStorage.setItem('lapdok_draft', JSON.stringify(entry.data));
-            window.location.href = "index.html";
+        if(data.length === 0) {
+            listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Tidak ada riwayat pada periode ini.</p>';
+            return;
         }
+
+        listDiv.innerHTML = data.map(h => `
+            <div class="report-card-preview" onclick="restoreToEditor(${h.id})">
+                <button class="btn-del" onclick="deleteItem(event, ${h.id})">Hapus</button>
+                <div class="title">${h.timestamp}</div>
+                <div class="meta">📍 ${h.data.length} Item Pekerjaan | ID: ${h.id}</div>
+            </div>
+        `).join('');
     }
 
-    window.onload = renderHistory;
+    // 5. Fungsi Cetak Detail Masal
+    function generatePrintView() {
+        const data = getFilteredData();
+        if(data.length === 0) return alert("Data kosong, tidak ada yang bisa dicetak.");
+
+        const target = document.getElementById('print-content-target');
+        target.innerHTML = ''; 
+
+        data.forEach(report => {
+            let reportBlock = document.createElement('div');
+            reportBlock.className = 'print-report-block';
+
+            let itemsHtml = report.data.map((item, idx) => `
+                <div class="print-job-item">
+                    <div class="print-job-header">ITEM PEKERJAAN #${idx + 1} - ${report.timestamp}</div>
+                    <div class="print-meta-data">
+                        <strong>KOORDINAT:</strong> ${item.gps}<br>
+                        <strong>ALAMAT:</strong> ${item.addr}
+                    </div>
+                    <div class="print-photo-grid">
+                        <div class="print-photo-col">
+                            <div class="print-photo-label">SEBELUM</div>
+                            <div class="print-photo-box">${item.p1 ? `<img src="${item.p1}">` : 'N/A'}</div>
+                        </div>
+                        <div class="print-photo-col">
+                            <div class="print-photo-label">PROSES</div>
+                            <div class="print-photo-box">${item.p2 ? `<img src="${item.p2}">` : 'N/A'}</div>
+                        </div>
+                        <div class="print-photo-col" style="border-right:none;">
+                            <div class="print-photo-label">SESUDAH</div>
+                            <div class="print-photo-box">${item.p3 ? `<img src="${item.p3}">` : 'N/A'}</div>
+                        </div>
+                    </div>
+                    <div class="print-desc-box">
+                        <strong>KETERANGAN:</strong><br>${item.desc || '-'}
+                    </div>
+                </div>
+            `).join('');
+
+            reportBlock.innerHTML = itemsHtml;
+            target.appendChild(reportBlock);
+        });
+
+        setTimeout(() => { window.print(); }, 500);
+    }
+
+    // Fungsi Tambahan (Hapus & Restore)
+    function deleteItem(e, id) {
+        e.stopPropagation();
+        if(!confirm("Hapus laporan?")) return;
+        let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
+        localStorage.setItem('lapdok_history', JSON.stringify(history.filter(x => x.id !== id)));
+        updateUI();
+    }
+
+    function restoreToEditor(id) {
+        if(!confirm("Muat ke editor untuk diubah?")) return;
+        const history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
+        const entry = history.find(x => x.id === id);
+        localStorage.setItem('lapdok_draft', JSON.stringify(entry.data));
+        window.location.href = "index.html";
+    }
+
+    window.onload = updateUI;
 </script>
 </body>
 </html>
