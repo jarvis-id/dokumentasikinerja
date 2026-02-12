@@ -3,32 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Form Laporan Dokumentasi Pekerjaan</title>
+    <title>Laporan Dokumentasi Pekerjaan - ESRI Search Edition</title>
     
-    <!-- Leaflet Assets (Peta) -->
+    <!-- Leaflet CSS & JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <!-- Leaflet Geosearch Assets (Pencarian Alamat) -->
+    <!-- Leaflet Geosearch (Menggunakan ESRI Provider) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.11.0/dist/geosearch.css" />
     <script src="https://unpkg.com/leaflet-geosearch@3.11.0/dist/bundle.min.js"></script>
 
     <style>
         /* ==========================================
-           CSS BASE & RESPONSIVE
+           CORE STYLES
            ========================================== */
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            margin: 0; padding: 10px; background-color: #f0f2f5; color: #333; font-size: 11px;
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif; 
+            margin: 0; padding: 10px; background-color: #f4f7f6; color: #333; font-size: 11px;
         }
         .container { width: 100%; max-width: 900px; margin: auto; }
         h3.main-title { text-align: center; font-size: 16px; text-transform: uppercase; margin: 15px 0; color: #2c3e50; }
 
         /* ITEM CARD */
         .job-item {
-            background: white; border: 1px solid #dcdfe3; border-radius: 8px;
-            margin-bottom: 25px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            background: white; border: 1px solid #d1d8dd; border-radius: 8px;
+            margin-bottom: 25px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.08);
             page-break-inside: avoid;
         }
         .header-main {
@@ -36,46 +36,42 @@
             font-weight: bold; display: flex; justify-content: space-between; align-items: center;
         }
 
-        /* LOKASI SECTION */
+        /* INPUT GROUPS */
         .input-group { padding: 12px; border-bottom: 1px solid #f0f0f0; }
-        .label-mini { font-size: 10px; font-weight: 700; display: block; margin-bottom: 5px; color: #7f8c8d; text-transform: uppercase; }
+        .label-mini { font-size: 10px; font-weight: 700; display: block; margin-bottom: 5px; color: #95a5a6; text-transform: uppercase; }
         
         .btn-map-trigger {
             background-color: #f39c12 !important; color: white !important;
             padding: 8px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;
-            display: inline-flex; align-items: center; gap: 5px; margin-bottom: 8px;
+            margin-bottom: 8px; font-size: 10px;
         }
 
         .gps-res {
             width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;
-            font-size: 10px; background: #f9f9f9; color: #2980b9; font-weight: bold; margin-bottom: 5px;
+            font-size: 10px; background: #fafafa; color: #2980b9; font-weight: bold; margin-bottom: 5px;
         }
         .address-output {
-            font-size: 10px; color: #555; background: #fffbe6;
+            font-size: 10px; color: #444; background: #fffbe6;
             padding: 8px; border-left: 4px solid #f39c12; min-height: 30px; line-height: 1.4; border-radius: 2px;
         }
 
-        /* DATE SECTION */
         .date-display {
             padding: 8px; border: 1px solid #ddd; border-radius: 4px;
-            font-size: 11px; background: #f8f9fa; font-weight: bold;
+            font-size: 11px; background: #fdfdfd; font-weight: bold; color: #2c3e50;
         }
 
-        /* PHOTO GRID */
+        /* GRID PHOTO */
         .grid-header {
             display: grid; grid-template-columns: 1fr 1fr 1fr;
             text-align: center; background: #ecf0f1 !important;
             font-size: 10px; font-weight: bold; border-top: 1px solid #eee; border-bottom: 1px solid #eee;
         }
-        .grid-header div { padding: 8px 2px; border-right: 1px solid #ddd; }
+        .grid-header div { padding: 8px 2px; border-right: 1px solid #d1d8dd; }
         .grid-content { display: grid; grid-template-columns: 1fr 1fr 1fr; }
         .column { padding: 10px 5px; border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; }
         
         .photo-actions { display: flex; gap: 4px; margin-bottom: 8px; }
-        .btn-photo { 
-            padding: 5px 8px; font-size: 10px; border: 1px solid #ccc; 
-            border-radius: 4px; cursor: pointer; background: white;
-        }
+        .btn-photo { padding: 5px 8px; font-size: 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background: white; }
 
         .image-preview {
             width: 100%; height: 130px; border: 2px dashed #ecf0f1; border-radius: 4px;
@@ -83,15 +79,13 @@
         }
         .image-preview img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* KETERANGAN (AUTO-RESIZE) */
+        /* KETERANGAN SECTION */
         .footer-section { padding: 12px; }
         .footer-section textarea { 
             width: 100%; min-height: 80px; padding: 10px; border: 1px solid #ccc;
             font-size: 11px; line-height: 1.6; resize: none; border-radius: 4px; 
-            overflow: hidden; transition: border 0.2s;
+            overflow: hidden; /* Sembunyikan scrollbar agar memanjang */
         }
-        .footer-section textarea:focus { border-color: #3498db; outline: none; }
-        
         .print-text-output {
             display: none; white-space: pre-wrap; word-wrap: break-word;
             font-size: 11px; line-height: 1.6; padding: 10px; border: 1px solid #333; border-radius: 4px;
@@ -108,22 +102,21 @@
             padding: 10px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* GLOBAL ACTIONS */
+        /* ACTIONS */
         .actions { display: flex; flex-direction: column; gap: 10px; margin: 30px 0 60px 0; }
         .btn-add { background: #3498db !important; color: white; padding: 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
         .btn-print { background: #2ecc71 !important; color: white; padding: 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
 
-        /* PRINT SETTINGS */
+        /* PRINT CONFIG */
         @media print {
-            @page { size: portrait; margin: 1cm; }
             .actions, .btn-map-trigger, .photo-actions, input[type="date"], #map-modal, .btn-remove, .leaflet-control-container, .btn-my-location { 
                 display: none !important; 
             }
             body { padding: 0; background: white; }
             .job-item { border: 1px solid #000; margin-bottom: 30px; box-shadow: none; page-break-inside: auto; }
             .footer-section textarea { display: none !important; }
-            .print-text-output { display: block !important; }
-            .address-output { border: none; background: transparent; padding: 0; font-weight: bold; color: black; margin-top: 5px;}
+            .print-text-output { display: block !important; border: 1px solid #333 !important; }
+            .address-output { border: none; background: transparent; padding: 0; color: black; font-weight: bold; margin-top: 5px;}
         }
     </style>
 </head>
@@ -131,27 +124,23 @@
 
 <div class="container">
     <h3 class="main-title">Laporan Dokumentasi Pekerjaan</h3>
-    
-    <!-- Container untuk baris pekerjaan -->
     <div id="job-container"></div>
-    
-    <!-- Tombol Navigasi Utama -->
     <div class="actions">
-        <button class="btn-add" onclick="addNewJobItem()">+ Tambah Item Pekerjaan Baru</button>
+        <button class="btn-add" onclick="addNewJobItem()">+ Tambah Item Pekerjaan</button>
         <button class="btn-print" onclick="preparePrint()">🖨️ Simpan Laporan (PDF)</button>
     </div>
 </div>
 
-<!-- Modal Peta Pintar -->
+<!-- Modal Map -->
 <div id="map-modal">
     <div class="modal-content">
-        <button class="btn-my-location" title="Gunakan Lokasi Saat Ini" onclick="useCurrentLocation()">📍 Lokasi Saya</button>
+        <button class="btn-my-location" onclick="useCurrentLocation()">📍 Lokasi Saya</button>
         <div id="map-container"></div>
         <div style="padding:15px; text-align:right; border-top:1px solid #eee; display:flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 10px; color: #e67e22; font-weight: bold;">*Klik peta atau gunakan pencarian</span>
+            <span style="font-size: 10px; color: #d35400; font-weight: bold;">*Gunakan Kotak Pencarian atau Klik Peta</span>
             <div>
-                <button onclick="closeMap()" style="padding:10px 20px; background:#95a5a6; color:white; border:none; border-radius:4px; cursor:pointer; margin-right:5px;">Batal</button>
-                <button onclick="confirmLocation()" style="padding:10px 20px; background:#27ae60; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">Konfirmasi Lokasi</button>
+                <button onclick="closeMap()" style="padding:10px 15px; background:#95a5a6; color:white; border:none; border-radius:4px;">Batal</button>
+                <button onclick="confirmLocation()" style="padding:10px 15px; background:#27ae60; color:white; border:none; border-radius:4px; font-weight:bold;">Simpan Lokasi</button>
             </div>
         </div>
     </div>
@@ -164,7 +153,6 @@
     let activeAddressId = null;
     let tempCoords = null;
 
-    // --- UTILS ---
     function formatToIndonesian(dateObj) {
         const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -176,7 +164,6 @@
         textarea.style.height = textarea.scrollHeight + 'px';
     }
 
-    // --- CORE LOGIC ---
     function addNewJobItem() {
         itemCount++;
         const container = document.getElementById('job-container');
@@ -185,26 +172,20 @@
         const jobHtml = `
             <div class="job-item" id="item-${itemCount}">
                 <div class="header-main">
-                    <span>ITEM PEKERJAAN #${itemCount}</span>
-                    <button class="btn-remove" onclick="this.closest('.job-item').remove()" style="background:transparent; color:white; border:1px solid white; border-radius:3px; padding:2px 8px; font-size:10px; cursor:pointer;">Hapus</button>
+                    <span>ITEM #${itemCount}</span>
+                    <button class="btn-remove" onclick="this.closest('.job-item').remove()" style="background:transparent; color:white; border:1px solid white; border-radius:3px; padding:2px 6px; font-size:9px; cursor:pointer;">Hapus</button>
                 </div>
-                
                 <div class="input-group">
-                    <label class="label-mini">Lokasi & Alamat:</label>
+                    <label class="label-mini">Titik Koordinat & Alamat:</label>
                     <div class="input-row">
-                        <button class="btn-map-trigger" onclick="openMap('gps-res-${itemCount}', 'addr-res-${itemCount}')">🗺️ Cari / Pilih Lokasi</button>
-                        <input type="text" class="gps-res" id="gps-res-${itemCount}" readonly placeholder="Koordinat akan muncul di sini...">
-                        <div class="address-output" id="addr-res-${itemCount}">Alamat belum ditentukan...</div>
+                        <button class="btn-map-trigger" onclick="openMap('gps-res-${itemCount}', 'addr-res-${itemCount}')">🗺️ Cari & Pilih Lokasi</button>
+                        <input type="text" class="gps-res" id="gps-res-${itemCount}" readonly placeholder="Link Google Maps...">
+                        <div class="address-output" id="addr-res-${itemCount}">Alamat akan muncul otomatis setelah lokasi disimpan...</div>
                     </div>
-                    
-                    <label class="label-mini" style="margin-top:15px;">Waktu Pekerjaan:</label>
+                    <label class="label-mini" style="margin-top:12px;">Tanggal:</label>
                     <div class="date-display">${todayFormatted}</div>
                 </div>
-
-                <div class="grid-header">
-                    <div>FOTO SEBELUM</div><div>FOTO PROSES</div><div>FOTO SESUDAH</div>
-                </div>
-
+                <div class="grid-header"><div>SEBELUM</div><div>PROSES</div><div>SESUDAH</div></div>
                 <div class="grid-content">
                     ${[1,2,3].map(i => `
                         <div class="column">
@@ -218,10 +199,9 @@
                         </div>
                     `).join('')}
                 </div>
-
                 <div class="footer-section">
-                    <label class="label-mini">Keterangan / Laporan:</label>
-                    <textarea id="ta-${itemCount}" oninput="autoResize(this)" placeholder="Ketik rincian pekerjaan secara lengkap di sini..."></textarea>
+                    <label class="label-mini">Keterangan Pekerjaan:</label>
+                    <textarea id="ta-${itemCount}" oninput="autoResize(this)" placeholder="Tuliskan detail pekerjaan..."></textarea>
                     <div id="print-ta-${itemCount}" class="print-text-output"></div>
                 </div>
             </div>
@@ -233,35 +213,33 @@
         const file = input.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
-            document.getElementById(previewId).innerHTML = `<img src="${e.target.result}">`;
-        };
+        reader.onload = (e) => document.getElementById(previewId).innerHTML = `<img src="${e.target.result}">`;
         reader.readAsDataURL(file);
     }
 
-    // --- MAP LOGIC (THE SMART PART) ---
+    // --- MAP ENGINE ---
     function initMap() {
-        // Tiles Google Hybrid (Update nama jalan & Satelit)
+        // Tiles: Google Hybrid (Satelit + Nama Jalan Terupdate)
         map = L.map('map-container').setView([-2.5, 118], 5);
         L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-            attribution: '© Google Maps Satelit'
+            attribution: '© Google Maps'
         }).addTo(map);
 
-        // Geosearch Bar (Gratis)
-        const provider = new window.GeoSearch.OpenStreetMapProvider();
+        // Pencarian: ESRI Provider (Sangat akurat untuk gedung & POI di Indonesia)
+        const provider = new window.GeoSearch.EsriProvider(); 
+
         searchControl = new window.GeoSearch.GeoSearchControl({
             provider: provider,
             style: 'bar',
             autoClose: true,
             keepResult: true,
-            searchLabel: 'Cari Nama Jalan, Toko, atau Gedung...'
+            searchLabel: 'Cari PDAM, Nama Jalan, atau Gedung...',
+            updateMap: true
         });
         map.addControl(searchControl);
 
-        // Klik Peta
         map.on('click', (e) => setMarker(e.latlng));
         
-        // Hasil pencarian dipilih
         map.on('geosearch/showlocation', (result) => {
             tempCoords = `${result.location.y.toFixed(6)},${result.location.x.toFixed(6)}`;
         });
@@ -282,29 +260,29 @@
     }
 
     function closeMap() { 
-        document.getElementById('map-modal').style.display = 'none'; 
-        tempCoords = null; // reset temp
+        document.getElementById('map-modal').style.display = 'none';
+        tempCoords = null; 
     }
 
     function useCurrentLocation() {
-        if (!navigator.geolocation) return alert("Perangkat Anda tidak mendukung GPS.");
+        if (!navigator.geolocation) return alert("GPS tidak didukung.");
         navigator.geolocation.getCurrentPosition((pos) => {
             const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             map.setView(latlng, 17);
             setMarker(latlng);
-        }, () => alert("Izin lokasi ditolak atau GPS tidak aktif."));
+        }, () => alert("Gagal akses GPS. Pastikan izin lokasi diberikan."));
     }
 
     async function reverseGeocode(lat, lng) {
         try {
             const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
             const data = await response.json();
-            return data.display_name || "Alamat lengkap tidak tersedia";
-        } catch (e) { return "Gagal memuat alamat. Periksa koneksi internet."; }
+            return data.display_name || "Alamat tidak ditemukan";
+        } catch (e) { return "Gagal memuat alamat"; }
     }
 
     async function confirmLocation() {
-        // SMART FALLBACK: Jika user tidak klik & tidak cari, ambil titik tengah peta saat ini
+        // SMART LOGIC: Jika tidak cari & tidak klik, ambil tengah peta
         if (!tempCoords) {
             const center = map.getCenter();
             setMarker(center);
@@ -314,7 +292,7 @@
         document.getElementById(activeInputId).value = `https://www.google.com/maps/search/?api=1&query=${tempCoords}`;
         
         const addrDiv = document.getElementById(activeAddressId);
-        addrDiv.innerText = "🔄 Mengambil alamat lengkap...";
+        addrDiv.innerText = "🔄 Mencari alamat lengkap...";
         
         const address = await reverseGeocode(lat, lng);
         addrDiv.innerText = address;
@@ -322,10 +300,9 @@
         closeMap();
     }
 
-    // --- PRINTING ---
     function preparePrint() {
         const items = document.querySelectorAll('.job-item');
-        if (items.length === 0) return alert("Tambah minimal satu item pekerjaan.");
+        if (items.length === 0) return alert("Tambahkan item pekerjaan terlebih dahulu.");
 
         items.forEach((item) => {
             const ta = item.querySelector('textarea');
@@ -336,9 +313,7 @@
         setTimeout(() => window.print(), 500);
     }
 
-    // Inisialisasi Item Pertama
     window.onload = addNewJobItem;
 </script>
-
 </body>
 </html>
