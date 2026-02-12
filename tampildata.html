@@ -35,61 +35,63 @@
         #print-area { display: none; }
 
         @media print {
+            @page { size: A4; margin: 10mm; }
             .navbar, .filter-card, #history-list, .btn-del, .btn-print-full, .reset-link { display: none !important; }
             body { background: white; padding: 0; margin: 0; }
             #print-area { display: block !important; }
             
-            /* Kontainer Halaman */
             .page-container { 
                 page-break-after: always; 
-                height: 100vh; 
-                display: flex; 
-                flex-direction: column;
-                padding: 10mm; /* Margin standar cetak */
+                height: 275mm; /* Tinggi A4 dikurangi margin */
                 position: relative;
+                overflow: hidden;
             }
             .page-container:last-child { page-break-after: auto; }
 
-            /* Header Halaman Cetak */
             .print-header-global {
-                text-align: center;
-                font-size: 16px;
-                font-weight: bold;
-                border-bottom: 2px solid #000;
-                margin-bottom: 15px;
-                padding-bottom: 10px;
-                text-transform: uppercase;
-            }
-
-            /* Footer Halaman (Nomor Halaman) */
-            .print-footer-page {
-                position: absolute;
-                bottom: 10mm;
-                right: 10mm;
-                font-size: 10px;
-                font-weight: bold;
-                color: #000;
+                text-align: center; font-size: 14px; font-weight: bold;
+                border-bottom: 1.5px solid #000; margin-bottom: 10px; padding-bottom: 5px;
             }
 
             .print-job-item { 
                 border: 1px solid #000; 
-                margin-bottom: 15px; 
-                flex: 1; /* Agar 3 item membagi ruang halaman secara merata */
-                display: flex;
-                flex-direction: column;
+                margin-bottom: 8px; 
+                height: 82mm; /* Tinggi tetap agar 3 item pas (82mm x 3 = 246mm + header/footer) */
+                display: block; 
                 overflow: hidden;
             }
             
-            .print-job-header { background: #34495e !important; color: white !important; padding: 6px 10px; font-weight: bold; font-size: 12px; }
-            .print-meta-data { padding: 5px 10px; font-size: 9px; border-bottom: 1px solid #eee; line-height: 1.3; }
+            .print-job-header { background: #34495e !important; color: white !important; padding: 4px 10px; font-weight: bold; font-size: 11px; }
+            .print-meta-data { padding: 4px 10px; font-size: 8.5px; border-bottom: 1px solid #000; line-height: 1.2; background: #f9f9f9 !important; }
             
-            .print-photo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid #eee; flex-grow: 1; }
-            .print-photo-col { padding: 5px; text-align: center; border-right: 1px solid #eee; display: flex; flex-direction: column; }
+            /* PHOTO GRID DENGAN TINGGI TETAP */
+            .print-photo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; height: 50mm; }
+            .print-photo-col { padding: 4px; text-align: center; border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; }
             .print-photo-label { font-size: 8px; font-weight: bold; margin-bottom: 2px; }
-            .print-photo-box { flex-grow: 1; aspect-ratio: 1/1; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fff; }
-            .print-photo-box img { width: 100%; height: 100%; object-fit: contain; }
             
-            .print-desc-box { padding: 8px 10px; font-size: 10px; background: #f9f9f9 !important; border-top: 1px solid #000; }
+            .print-photo-box { 
+                width: 42mm;  /* Lebar tetap */
+                height: 42mm; /* Tinggi tetap (1:1) */
+                border: 1px solid #ccc; 
+                display: flex; align-items: center; justify-content: center; 
+                background: #fff; overflow: hidden;
+            }
+            .print-photo-box img { 
+                max-width: 100%; 
+                max-height: 100%; 
+                object-fit: contain; /* Foto menyusut proporsional, tidak memanjang */
+            }
+            
+            .print-desc-box { 
+                padding: 6px 10px; font-size: 9px; 
+                border-top: 1px solid #000; height: 15mm; 
+                overflow: hidden; line-height: 1.3;
+            }
+
+            .print-footer-page {
+                position: absolute; bottom: 0; right: 0;
+                font-size: 9px; font-weight: bold;
+            }
         }
     </style>
 </head>
@@ -125,16 +127,15 @@
         </div>
         <button class="btn-print-full" onclick="generatePrintView()">🖨️ Cetak Laporan Detail</button>
     </div>
-
     <div id="history-list"></div>
 </div>
 
 <div id="print-area">
-    <!-- Konten cetak akan di-render di sini oleh JavaScript -->
     <div id="print-content-target"></div>
 </div>
 
 <script>
+    // Inisialisasi Tahun
     const yearSelect = document.getElementById('f-year');
     const curYear = new Date().getFullYear();
     for(let i = curYear; i >= 2024; i--) {
@@ -182,7 +183,6 @@
         const target = document.getElementById('print-content-target');
         target.innerHTML = ''; 
 
-        // Flatten semua item pekerjaan
         let allJobItems = [];
         data.forEach(report => {
             report.data.forEach(job => {
@@ -190,27 +190,19 @@
             });
         });
 
-        // Hitung total halaman (3 item per halaman)
         const totalPages = Math.ceil(allJobItems.length / 3);
 
-        // Render per halaman
         for (let i = 0; i < allJobItems.length; i += 3) {
-            const currentPageNum = Math.floor(i / 3) + 1;
+            const pageNum = Math.floor(i / 3) + 1;
             const pageContainer = document.createElement('div');
             pageContainer.className = 'page-container';
             
-            // Header Judul (Muncul di setiap halaman)
-            const headerHtml = `<div class="print-header-global">DOKUMENTASI LAPORAN KINERJA</div>`;
-            
-            // Footer Nomor Halaman (Muncul di sudut kanan bawah setiap halaman)
-            const footerHtml = `<div class="print-footer-page">Halaman ${currentPageNum} dari ${totalPages}</div>`;
-
             const chunk = allJobItems.slice(i, i + 3);
             const chunkHtml = chunk.map((item, idx) => `
                 <div class="print-job-item">
                     <div class="print-job-header">Pekerjaan ke-${i + idx + 1} (${item.timestamp})</div>
                     <div class="print-meta-data">
-                        <strong>KOORDINAT:</strong> ${item.gps} | <strong>ALAMAT:</strong> ${item.addr}
+                        <strong>GPS:</strong> ${item.gps} | <strong>ALAMAT:</strong> ${item.addr.substring(0, 100)}
                     </div>
                     <div class="print-photo-grid">
                         <div class="print-photo-col">
@@ -232,7 +224,11 @@
                 </div>
             `).join('');
 
-            pageContainer.innerHTML = headerHtml + chunkHtml + footerHtml;
+            pageContainer.innerHTML = `
+                <div class="print-header-global">DOKUMENTASI LAPORAN KINERJA</div>
+                ${chunkHtml}
+                <div class="print-footer-page">Halaman ${pageNum} dari ${totalPages}</div>
+            `;
             target.appendChild(pageContainer);
         }
 
