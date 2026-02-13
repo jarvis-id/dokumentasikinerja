@@ -115,15 +115,15 @@
     }
 
     /**
-     * FUNGSI COMPRESS + TIME MARK (MODERN STYLE)
+     * FUNGSI COMPRESS DENGAN LOGIKA FILTER WATERMARK
      */
-    async function compressImage(base64Str) {
+    async function compressImage(base64Str, useWatermark) {
         return new Promise((resolve) => {
             const img = new Image();
             img.src = base64Str;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1000; // Lebar lebih besar agar watermark tajam
+                const MAX_WIDTH = 1000; 
                 let width = img.width;
                 let height = img.height;
 
@@ -139,67 +139,63 @@
                 // 1. Gambar foto asli
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // 2. Persiapkan Data Waktu (Bahasa Indonesia & 24 Jam)
-                const now = new Date();
-                const jam = now.getHours().toString().padStart(2, '0');
-                const menit = now.getMinutes().toString().padStart(2, '0');
-                const waktuFull = `${jam}:${menit}`;
-                
-                const hariNama = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-                const bulanNama = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-                
-                const hari = hariNama[now.getDay()];
-                const tanggal = now.getDate().toString().padStart(2, '0');
-                const bulan = bulanNama[now.getMonth()];
-                const tahun = now.getFullYear();
-                const tanggalFull = `${bulan} ${tanggal}, ${tahun}`;
+                // 2. Jika useWatermark true (Hanya dari Kamera), gambar Time Mark
+                if (useWatermark) {
+                    const now = new Date();
+                    const jam = now.getHours().toString().padStart(2, '0');
+                    const menit = now.getMinutes().toString().padStart(2, '0');
+                    const waktuFull = `${jam}:${menit}`;
+                    
+                    const hariNama = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                    const bulanNama = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+                    
+                    const hari = hariNama[now.getDay()];
+                    const tanggal = now.getDate().toString().padStart(2, '0');
+                    const bulan = bulanNama[now.getMonth()];
+                    const tahun = now.getFullYear();
+                    const tanggalFull = `${bulan} ${tanggal}, ${tahun}`;
 
-                // 3. Konfigurasi Gaya Watermark (Proporsional)
-                const margin = width * 0.05; 
-                const fontSizeJam = width * 0.12; 
-                const fontSizeInfo = width * 0.035; 
-                const lineWidth = width * 0.008;
+                    const margin = width * 0.05; 
+                    const fontSizeJam = width * 0.12; 
+                    const fontSizeInfo = width * 0.035; 
+                    const lineWidth = width * 0.008;
 
-                // Shadow (Agar teks terbaca di background terang)
-                ctx.shadowColor = "rgba(0, 0, 0, 0.7)";
-                ctx.shadowBlur = 8;
-                ctx.shadowOffsetX = 2;
-                ctx.shadowOffsetY = 2;
+                    ctx.shadowColor = "rgba(0, 0, 0, 0.7)";
+                    ctx.shadowBlur = 8;
+                    ctx.shadowOffsetX = 2;
+                    ctx.shadowOffsetY = 2;
 
-                // --- A. Gambar Jam Besar ---
-                ctx.font = `bold ${fontSizeJam}px sans-serif`;
-                ctx.fillStyle = "white";
-                ctx.textBaseline = "bottom";
-                ctx.textAlign = "left";
-                ctx.fillText(waktuFull, margin, height - margin);
-                
-                const jamWidth = ctx.measureText(waktuFull).width;
+                    // Jam Besar
+                    ctx.font = `bold ${fontSizeJam}px sans-serif`;
+                    ctx.fillStyle = "white";
+                    ctx.textBaseline = "bottom";
+                    ctx.textAlign = "left";
+                    ctx.fillText(waktuFull, margin, height - margin);
+                    
+                    const jamWidth = ctx.measureText(waktuFull).width;
 
-                // --- B. Gambar Garis Vertikal Kuning ---
-                ctx.shadowBlur = 0; 
-                ctx.strokeStyle = "#ffc107"; 
-                ctx.lineWidth = lineWidth;
-                ctx.lineCap = "round";
-                
-                const lineX = margin + jamWidth + (width * 0.03);
-                const lineYBottom = height - margin - (fontSizeJam * 0.05);
-                const lineYTop = lineYBottom - (fontSizeJam * 0.8);
+                    // Garis Kuning
+                    ctx.shadowBlur = 0; 
+                    ctx.strokeStyle = "#ffc107"; 
+                    ctx.lineWidth = lineWidth;
+                    ctx.lineCap = "round";
+                    
+                    const lineX = margin + jamWidth + (width * 0.03);
+                    const lineYBottom = height - margin - (fontSizeJam * 0.05);
+                    const lineYTop = lineYBottom - (fontSizeJam * 0.8);
 
-                ctx.beginPath();
-                ctx.moveTo(lineX, lineYTop);
-                ctx.lineTo(lineX, lineYBottom);
-                ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(lineX, lineYTop);
+                    ctx.lineTo(lineX, lineYBottom);
+                    ctx.stroke();
 
-                // --- C. Gambar Hari dan Tanggal (Stacked) ---
-                ctx.shadowBlur = 8; 
-                ctx.font = `bold ${fontSizeInfo}px sans-serif`;
-                
-                // Baris Atas: Tanggal
-                ctx.fillText(tanggalFull, lineX + (width * 0.02), lineYTop + (fontSizeInfo * 1.2));
-                // Baris Bawah: Hari
-                ctx.fillText(hari, lineX + (width * 0.02), lineYBottom);
+                    // Tanggal & Hari
+                    ctx.shadowBlur = 8; 
+                    ctx.font = `bold ${fontSizeInfo}px sans-serif`;
+                    ctx.fillText(tanggalFull, lineX + (width * 0.02), lineYTop + (fontSizeInfo * 1.2));
+                    ctx.fillText(hari, lineX + (width * 0.02), lineYBottom);
+                }
 
-                // Kembalikan sebagai base64 JPEG
                 resolve(canvas.toDataURL('image/jpeg', 0.8));
             };
         });
@@ -225,9 +221,14 @@
                 <div class="grid-content">
                     ${[1,2,3].map(i => `
                         <div class="column">
-                            <div class="photo-actions"><button class="btn-photo" onclick="document.getElementById('cam-${i}-${itemCount}').click()">📷</button><button class="btn-photo" onclick="document.getElementById('gal-${i}-${itemCount}').click()">📁</button></div>
-                            <input type="file" id="cam-${i}-${itemCount}" accept="image/*" capture="environment" style="display:none" onchange="processImg(this, 'p${i}-${itemCount}')">
-                            <input type="file" id="gal-${i}-${itemCount}" accept="image/*" style="display:none" onchange="processImg(this, 'p${i}-${itemCount}')">
+                            <div class="photo-actions">
+                                <!-- Tombol Kamera: Kirim parameter TRUE untuk Time Mark -->
+                                <button class="btn-photo" onclick="document.getElementById('cam-${i}-${itemCount}').click()">📷</button>
+                                <!-- Tombol Galeri: Kirim parameter FALSE untuk TANPA Time Mark -->
+                                <button class="btn-photo" onclick="document.getElementById('gal-${i}-${itemCount}').click()">📁</button>
+                            </div>
+                            <input type="file" id="cam-${i}-${itemCount}" accept="image/*" capture="environment" style="display:none" onchange="processImg(this, 'p${i}-${itemCount}', true)">
+                            <input type="file" id="gal-${i}-${itemCount}" accept="image/*" style="display:none" onchange="processImg(this, 'p${i}-${itemCount}', false)">
                             <div class="image-preview" id="p${i}-${itemCount}"><span>Preview</span></div>
                         </div>`).join('')}
                 </div>
@@ -236,11 +237,12 @@
         container.insertAdjacentHTML('beforeend', html);
     }
 
-    async function processImg(input, previewId) {
+    async function processImg(input, previewId, isCamera) {
         const file = input.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = async (e) => {
-            const compressed = await compressImage(e.target.result);
+            // Parameter isCamera diteruskan ke fungsi compress
+            const compressed = await compressImage(e.target.result, isCamera);
             document.getElementById(previewId).innerHTML = `<img src="${compressed}">`;
             saveDraft();
         };
