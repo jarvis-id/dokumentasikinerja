@@ -5,64 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Riwayat & Cetak - DokKiner</title>
     <style>
-        /* ==========================================
-           CSS LAYAR (SCREEN)
-           ========================================== */
+        /* CSS Layar (Sama) */
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; color: #333; padding-bottom: 100px; }
-        
         .navbar { display: flex; justify-content: space-around; background: #34495e; padding: 12px 0; position: sticky; top: 0; z-index: 9999; }
         .navbar a { color: white; text-decoration: none; font-weight: bold; opacity: 0.7; font-size: 13px; }
         .navbar a.active { opacity: 1; border-bottom: 2px solid #00d2ff; }
-        
         .container { max-width: 900px; margin: auto; padding: 15px; }
-        
         .filter-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; }
         .filter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         label { font-size: 10px; font-weight: bold; color: #95a5a6; text-transform: uppercase; }
         select, input { width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px; }
-        
-        .reset-link { font-size: 10px; color: #3498db; cursor: pointer; text-decoration: underline; display: inline-block; margin-top: 5px; }
-        
-        /* Selection Controls */
-        .selection-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px; }
-        .select-all-btn { background: #95a5a6; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; }
-        
-        .btn-print-full { background: #27ae60; color: white; border: none; padding: 15px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px; margin-top: 10px; box-shadow: 0 4px 6px rgba(39, 174, 96, 0.3); }
-        .btn-print-full:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
-
-        /* Report Card with Checkbox */
-        .report-card-wrapper { display: flex; align-items: center; gap: 12px; background: white; margin-bottom: 10px; padding: 5px 12px; border-radius: 8px; border: 1px solid #eee; transition: 0.2s; }
-        .report-card-wrapper:has(input:checked) { background: #e3f2fd; border-color: #2196f3; }
-        
-        .checkbox-container { display: flex; align-items: center; justify-content: center; width: 30px; }
-        .checkbox-container input { width: 22px; height: 22px; cursor: pointer; margin: 0; }
-
+        .btn-print-full { background: #27ae60; color: white; border: none; padding: 15px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px; margin-top: 10px; }
+        .report-card-wrapper { display: flex; align-items: center; gap: 12px; background: white; margin-bottom: 10px; padding: 5px 12px; border-radius: 8px; border: 1px solid #eee; }
+        .checkbox-container input { width: 22px; height: 22px; cursor: pointer; }
         .report-card-preview { flex-grow: 1; padding: 10px 0; position: relative; cursor: pointer; }
         .btn-del { position: absolute; right: 0; top: 10px; background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; }
 
-        /* ==========================================
-           CSS CETAK (PRINT PDF)
-           ========================================== */
+        /* CSS CETAK */
         #print-area { display: none; }
-
         @media print {
             @page { size: A4; margin: 0; }
             html, body { height: 100%; margin: 0 !important; padding: 0 !important; overflow: hidden; }
             .navbar, .filter-card, #history-list, .selection-bar { display: none !important; }
             #print-area { display: block !important; position: absolute; top: 0; left: 0; width: 100%; }
             .page-container { break-after: page; height: 296mm; width: 210mm; padding: 10mm; margin: 0; position: relative; display: flex; flex-direction: column; background: white; }
-            .print-header-global { text-align: center; font-size: 14px; font-weight: bold; border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 5px; text-transform: uppercase; }
-            .print-footer-page { position: absolute; bottom: 8mm; left: 10mm; font-size: 10px; font-weight: bold; color: #000; }
-            .print-job-item { border: 1px solid #000; margin-bottom: 8px; height: 85mm; display: flex; flex-direction: column; overflow: hidden; }
+            .print-header-global { text-align: center; font-size: 14px; font-weight: bold; border-bottom: 2px solid #000; margin-bottom: 10px; padding-bottom: 5px; }
+            .print-footer-page { position: absolute; bottom: 8mm; left: 10mm; font-size: 10px; font-weight: bold; }
+            .print-job-item { border: 1px solid #000; margin-bottom: 8px; height: 86mm; display: flex; flex-direction: column; overflow: hidden; }
             .print-job-header { background: #34495e !important; color: white !important; padding: 4px 10px; font-weight: bold; font-size: 11px; }
-            .print-meta-data { padding: 4px 10px; font-size: 8px; border-bottom: 1px solid #000; line-height: 1.2; background: #f9f9f9 !important; }
+            .print-meta-data { padding: 4px 10px; font-size: 8px; border-bottom: 1px solid #000; line-height: 1.3; background: #f9f9f9 !important; }
             .print-photo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; flex-grow: 1; border-bottom: 1px solid #000; }
             .print-photo-col { padding: 3px; text-align: center; border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-            .print-photo-label { font-size: 7px; font-weight: bold; }
-            .print-photo-box { width: 45mm; height: 45mm; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; }
+            .print-photo-label { font-size: 7px; font-weight: bold; margin-bottom: 2px; }
+            .print-photo-box { width: 44mm; height: 44mm; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; }
             .print-photo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
-            .print-desc-box { padding: 5px 10px; font-size: 9px; min-height: 15mm; line-height: 1.2; }
+            .print-desc-box { padding: 5px 10px; font-size: 9px; min-height: 12mm; line-height: 1.2; }
         }
     </style>
 </head>
@@ -76,109 +54,53 @@
 <div class="container">
     <div class="filter-card">
         <div class="filter-grid">
-            <div>
-                <label>Tahun</label>
-                <select id="f-year" onchange="updateUI()">
-                    <option value="">Semua Tahun</option>
-                </select>
-            </div>
-            <div>
-                <label>Bulan</label>
-                <select id="f-month" onchange="updateUI()">
-                    <option value="">Semua Bulan</option>
-                    <option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option>
-                    <option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option>
-                    <option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option>
-                    <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
-                </select>
-            </div>
-            <div>
-                <label>Tanggal</label>
-                <input type="date" id="f-date" onchange="updateUI()">
-                <span class="reset-link" onclick="resetDate()">Tampilkan Semua</span>
-            </div>
+            <div><label>Tahun</label><select id="f-year" onchange="updateUI()"><option value="">Semua</option></select></div>
+            <div><label>Bulan</label><select id="f-month" onchange="updateUI()"><option value="">Semua</option><option value="01">Januari</option><option value="02">Februari</option><option value="03">Maret</option><option value="04">April</option><option value="05">Mei</option><option value="06">Juni</option><option value="07">Juli</option><option value="08">Agustus</option><option value="09">September</option><option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option></select></div>
+            <div><label>Tanggal</label><input type="date" id="f-date" onchange="updateUI()"></div>
         </div>
-        <button class="btn-print-full" id="print-btn" onclick="generatePrintView()" disabled>🖨️ Cetak Item Terpilih (0)</button>
+        <button class="btn-print-full" id="print-btn" onclick="generatePrintView()" disabled>🖨️ Cetak Terpilih (0)</button>
     </div>
-
-    <div class="selection-bar">
-        <div id="status-text" style="font-size: 11px; color: #7f8c8d;">Daftar Riwayat:</div>
-        <button class="select-all-btn" onclick="toggleSelectAll()">Pilih Semua</button>
-    </div>
-
     <div id="history-list"></div>
 </div>
 
 <div id="print-area"><div id="print-content-target"></div></div>
 
 <script>
-    // Inisialisasi Dropdown Tahun
-    const yearSelect = document.getElementById('f-year');
-    const curYear = new Date().getFullYear();
-    for(let i = curYear; i >= 2024; i--) {
-        let opt = document.createElement('option'); opt.value = i; opt.innerHTML = i; yearSelect.appendChild(opt);
+    // --- HELPER TANGGAL ---
+    function formatIndoDate(dateString) {
+        if (!dateString) return "-";
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(date);
     }
 
-    function resetDate() {
-        document.getElementById('f-date').value = "";
-        document.getElementById('f-month').value = "";
-        document.getElementById('f-year').value = "";
-        updateUI();
-    }
-
-    function getFilteredData() {
-        const fy = document.getElementById('f-year').value;
-        const fm = document.getElementById('f-month').value;
-        const fd = document.getElementById('f-date').value;
-        
-        let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
-        
-        // Logika Filter Fleksibel (Hanya filter jika nilai ada)
-        if(fy) history = history.filter(h => h.year === fy);
-        if(fm) history = history.filter(h => h.month === fm);
-        if(fd) history = history.filter(h => h.date === fd);
-        
-        return history.sort((a,b) => b.id - a.id);
-    }
+    // Inisialisasi dropdown tahun
+    const yr = document.getElementById('f-year');
+    for(let i=new Date().getFullYear(); i>=2024; i--){ let o=document.createElement('option'); o.value=i; o.innerText=i; yr.appendChild(o); }
 
     function updateUI() {
-        const data = getFilteredData();
+        const fy=document.getElementById('f-year').value, fm=document.getElementById('f-month').value, fd=document.getElementById('f-date').value;
+        let data = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
+        if(fy) data = data.filter(h => h.year === fy);
+        if(fm) data = data.filter(h => h.month === fm);
+        if(fd) data = data.filter(h => h.date === fd);
+        
         const listDiv = document.getElementById('history-list');
-        
-        if(data.length === 0) { 
-            listDiv.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Data tidak ditemukan.</p>'; 
-            updatePrintButton();
-            return; 
-        }
-        
-        listDiv.innerHTML = data.map(h => `
+        listDiv.innerHTML = data.reverse().map(h => `
             <div class="report-card-wrapper">
-                <div class="checkbox-container">
-                    <input type="checkbox" class="report-cb" value="${h.id}" onchange="updatePrintButton()">
-                </div>
+                <div class="checkbox-container"><input type="checkbox" class="report-cb" value="${h.id}" onchange="updateBtn()"></div>
                 <div class="report-card-preview" onclick="restoreToEditor(${h.id})">
                     <button class="btn-del" onclick="deleteItem(event, ${h.id})">Hapus</button>
                     <div style="font-weight:bold; font-size:13px;">${h.timestamp}</div>
                     <div style="font-size:11px; color:#7f8c8d;">📦 ${h.data.length} Item Pekerjaan</div>
                 </div>
             </div>`).join('');
-        
-        updatePrintButton();
+        updateBtn();
     }
 
-    function toggleSelectAll() {
-        const checkboxes = document.querySelectorAll('.report-cb');
-        if (checkboxes.length === 0) return;
-        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-        checkboxes.forEach(cb => cb.checked = !allChecked);
-        updatePrintButton();
-    }
-
-    function updatePrintButton() {
-        const selectedCount = document.querySelectorAll('.report-cb:checked').length;
-        const btn = document.getElementById('print-btn');
-        btn.disabled = selectedCount === 0;
-        btn.innerText = `🖨️ Cetak Item Terpilih (${selectedCount})`;
+    function updateBtn() {
+        const count = document.querySelectorAll('.report-cb:checked').length;
+        document.getElementById('print-btn').disabled = count === 0;
+        document.getElementById('print-btn').innerText = `🖨️ Cetak Terpilih (${count})`;
     }
 
     function generatePrintView() {
@@ -186,31 +108,28 @@
         const allHistory = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
         const dataToPrint = allHistory.filter(h => selectedIds.includes(h.id));
 
-        if(dataToPrint.length === 0) return;
-
-        const target = document.getElementById('print-content-target'); 
-        target.innerHTML = ''; 
+        const target = document.getElementById('print-content-target');
+        target.innerHTML = '';
 
         let allJobItems = [];
-        // Mengurutkan item berdasarkan waktu laporan
-        dataToPrint.sort((a,b) => a.id - b.id).forEach(report => { 
-            report.data.forEach(job => { 
-                allJobItems.push({ ...job, timestamp: report.timestamp }); 
-            }); 
+        dataToPrint.sort((a,b) => a.id - b.id).forEach(rep => { 
+            rep.data.forEach(job => { allJobItems.push(job); }); 
         });
 
-        const totalPages = Math.ceil(allJobItems.length / 3);
-
+        const totalP = Math.ceil(allJobItems.length / 3);
         for (let i = 0; i < allJobItems.length; i += 3) {
-            const pageNum = Math.floor(i / 3) + 1;
-            const pageContainer = document.createElement('div'); 
-            pageContainer.className = 'page-container';
-            
+            const pageNum = Math.floor(i/3) + 1;
+            const container = document.createElement('div');
+            container.className = 'page-container';
             const chunk = allJobItems.slice(i, i + 3);
+            
             const chunkHtml = chunk.map((item, idx) => `
                 <div class="print-job-item">
-                    <div class="print-job-header">Pekerjaan #${i + idx + 1} (${item.timestamp})</div>
-                    <div class="print-meta-data"><strong>GPS:</strong> ${item.gps} | <strong>ALAMAT:</strong> ${item.addr}</div>
+                    <div class="print-job-header">Pekerjaan #${i + idx + 1}</div>
+                    <div class="print-meta-data">
+                        <strong>TANGGAL:</strong> ${formatIndoDate(item.workDate)} <br>
+                        <strong>GPS:</strong> ${item.gps} | <strong>ALAMAT:</strong> ${item.addr}
+                    </div>
                     <div class="print-photo-grid">
                         <div class="print-photo-col"><div class="print-photo-label">SEBELUM</div><div class="print-photo-box">${item.p1 ? `<img src="${item.p1}">` : ''}</div></div>
                         <div class="print-photo-col"><div class="print-photo-label">PROSES</div><div class="print-photo-box">${item.p2 ? `<img src="${item.p2}">` : ''}</div></div>
@@ -219,31 +138,14 @@
                     <div class="print-desc-box"><strong>KETERANGAN:</strong> ${item.desc || '-'}</div>
                 </div>`).join('');
 
-            pageContainer.innerHTML = `
-                <div class="print-header-global">DOKUMENTASI LAPORAN KINERJA</div>
-                <div style="flex-grow:1;">${chunkHtml}</div>
-                <div class="print-footer-page">Halaman ${pageNum} dari ${totalPages}</div>`;
-            target.appendChild(pageContainer);
+            container.innerHTML = `<div class="print-header-global">DOKUMENTASI LAPORAN KINERJA</div><div style="flex-grow:1;">${chunkHtml}</div><div class="print-footer-page">Halaman ${pageNum} dari ${totalP}</div>`;
+            target.appendChild(container);
         }
-
         setTimeout(() => { window.print(); }, 700);
     }
 
-    function deleteItem(e, id) { 
-        e.stopPropagation(); 
-        if(!confirm("Hapus laporan ini?")) return; 
-        let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]'); 
-        localStorage.setItem('lapdok_history', JSON.stringify(history.filter(x => x.id !== id))); 
-        updateUI(); 
-    }
-
-    function restoreToEditor(id) { 
-        if(!confirm("Muat data ini kembali ke Editor?")) return; 
-        const history = JSON.parse(localStorage.getItem('lapdok_history') || '[]'); 
-        const entry = history.find(x => x.id === id); 
-        localStorage.setItem('lapdok_draft', JSON.stringify(entry.data)); 
-        window.location.href = "index.html"; 
-    }
+    function deleteItem(e, id) { e.stopPropagation(); if(confirm("Hapus?")) { let h=JSON.parse(localStorage.getItem('lapdok_history')); localStorage.setItem('lapdok_history', JSON.stringify(h.filter(x=>x.id!==id))); updateUI(); } }
+    function restoreToEditor(id) { if(confirm("Muat ke editor?")) { const h=JSON.parse(localStorage.getItem('lapdok_history')); const entry=h.find(x=>x.id===id); localStorage.setItem('lapdok_draft', JSON.stringify(entry.data)); window.location.href="index.html"; } }
 
     window.onload = updateUI;
 </script>
