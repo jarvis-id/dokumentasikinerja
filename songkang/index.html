@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>INSTALL ABSENSI</title>
+    <title>INSTAL ABSENSI</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0056b3">
-    
+
     <script>
-        // LOGIKA REDIRECT OTOMATIS
-        // Jika aplikasi dibuka dalam mode "standalone" (setelah diinstal ke HP)
+        // REDIRECT OTOMATIS: 
+        // Jika aplikasi dibuka dari ikon di layar HP (Standalone), 
+        // langsung lempar ke website PDAM (Bukan lewat iframe)
         if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
             window.location.href = "https://pdamone.amertatoraya.com/";
         }
@@ -17,56 +18,53 @@
 
     <style>
         body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
+            font-family: sans-serif;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f8f9fa;
+            background-color: #f0f2f5;
             text-align: center;
         }
-        .card {
+        .container {
             background: white;
-            padding: 30px;
+            padding: 40px;
             border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            max-width: 300px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 320px;
         }
         img { width: 100px; height: 100px; border-radius: 15px; margin-bottom: 20px; }
-        h2 { margin: 10px 0; color: #333; }
-        p { color: #666; font-size: 14px; margin-bottom: 25px; }
+        h1 { font-size: 22px; color: #333; margin-bottom: 10px; }
+        p { color: #666; font-size: 14px; margin-bottom: 30px; }
         #btnInstall {
             background-color: #0056b3;
             color: white;
             border: none;
-            padding: 12px 25px;
+            padding: 15px 30px;
             font-size: 16px;
             font-weight: bold;
-            border-radius: 10px;
+            border-radius: 50px;
             cursor: pointer;
-            display: none; /* Muncul jika browser mendukung install */
             width: 100%;
+            display: none; /* Muncul hanya jika didukung browser */
         }
-        .footer { margin-top: 20px; font-size: 12px; color: #aaa; }
+        .help-text { margin-top: 20px; font-size: 12px; color: #999; }
     </style>
 </head>
 <body>
 
-    <div class="card">
+    <div class="container">
         <img src="https://raw.githubusercontent.com/jarvis-id/dokumentasikinerja/main/songkang/logosigap.png" alt="Logo">
-        <h2>ABSENSI</h2>
-        <p>Instal aplikasi ini di layar utama HP Anda untuk akses cepat.</p>
+        <h1>ABSENSI</h1>
+        <p>Instal aplikasi ini untuk memudahkan akses absensi harian Anda.</p>
         
-        <button id="btnInstall">INSTAL SEKARANG</button>
+        <button id="btnInstall">PASANG SEKARANG</button>
         
-        <div id="msgManual" style="display:none;">
-            <small>Klik titik tiga (⋮) di pojok kanan atas Chrome, lalu pilih <b>"Instal Aplikasi"</b> atau <b>"Tambahkan ke Layar Utama"</b>.</small>
+        <div id="manualMsg" style="display:none;" class="help-text">
+            Klik titik tiga (⋮) di Chrome, lalu pilih <br><b>"Instal Aplikasi"</b>
         </div>
     </div>
-
-    <div class="footer">PDAM Amerta Toraya</div>
 
     <script>
         // Registrasi Service Worker
@@ -76,7 +74,7 @@
 
         let deferredPrompt;
         const btnInstall = document.getElementById('btnInstall');
-        const msgManual = document.getElementById('msgManual');
+        const manualMsg = document.getElementById('manualMsg');
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -95,10 +93,10 @@
             }
         });
 
-        // Jika dalam 3 detik tombol instal tidak muncul, tampilkan panduan manual
+        // Jika setelah 3 detik tombol belum muncul (misal browser tak mendukung auto-prompt)
         setTimeout(() => {
             if (btnInstall.style.display === 'none') {
-                msgManual.style.display = 'block';
+                manualMsg.style.display = 'block';
             }
         }, 3000);
     </script>
