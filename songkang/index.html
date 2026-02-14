@@ -1,1 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INSTALL ABSENSI</title>
+    
+    <!-- Link ke Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0056b3">
+    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/jarvis-id/dokumentasikinerja/main/songkang/logosigap.png">
 
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
+        iframe { width: 100%; height: 100%; border: none; }
+        #install-banner {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: #0056b3; color: white; padding: 15px;
+            text-align: center; display: none; z-index: 9999;
+        }
+        button { background: white; color: #0056b3; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <!-- Banner Install (Akan muncul di Android jika belum terinstal) -->
+    <div id="install-banner">
+        Klik untuk menginstal aplikasi: 
+        <button id="btnInstall">INSTALL ABSENSI</button>
+    </div>
+
+    <!-- Menampilkan Halaman PDAM -->
+    <iframe src="https://pdamone.amertatoraya.com"></iframe>
+
+    <script>
+        // Registrasi Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+            .then(() => console.log("Service Worker Registered"));
+        }
+
+        // Logika Tombol Install
+        let deferredPrompt;
+        const installBanner = document.getElementById('install-banner');
+        const btnInstall = document.getElementById('btnInstall');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBanner.style.display = 'block';
+        });
+
+        btnInstall.addEventListener('click', (e) => {
+            installBanner.style.display = 'none';
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                }
+                deferredPrompt = null;
+            });
+        });
+    </script>
+</body>
+</html>
