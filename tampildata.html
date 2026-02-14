@@ -5,34 +5,140 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Riwayat Laporan - DokKiner</title>
     <style>
+        /* ==========================================
+           CSS LAYAR (SCREEN)
+           ========================================== */
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; color: #333; padding-bottom: 100px; }
-        .navbar { display: flex; justify-content: space-around; background: #34495e; padding: 12px 0; position: sticky; top: 0; z-index: 9999; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: #f4f7f6; color: #333; padding-bottom: 100px; }
+        .navbar { display: flex; justify-content: space-around; background: #34495e; padding: 12px 0; position: sticky; top: 0; z-index: 9999; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .navbar a { color: white; text-decoration: none; font-weight: bold; font-size: 13px; opacity: 0.7; }
         .navbar a.active { opacity: 1; border-bottom: 2px solid #00d2ff; }
         .container { max-width: 900px; margin: auto; padding: 15px; }
         .filter-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; }
-        .btn-print-full { background: #27ae60; color: white; border: none; padding: 15px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-print-full { background: #27ae60; color: white; border: none; padding: 15px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px; }
+        .btn-print-full:disabled { background: #bdc3c7; cursor: not-allowed; }
         .report-card-wrapper { display: flex; align-items: center; gap: 12px; background: white; margin-bottom: 10px; padding: 12px; border-radius: 8px; border: 1px solid #eee; }
         .report-card-preview { flex-grow: 1; cursor: pointer; position: relative; }
-        .btn-del { position: absolute; right: 0; top: 0; background: #e74c3c; color: white; border: none; padding: 5px; border-radius: 4px; font-size: 10px; }
+        .btn-del { position: absolute; right: 0; top: 0; background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; }
 
-        /* PRINT STYLE */
+        /* ==========================================
+           CSS CETAK (PRINT PDF) - FIX IMAGE & LAYOUT
+           ========================================== */
         #print-area { display: none; }
+
         @media print {
-            @page { size: A4; margin: 0; }
-            body { background: white; }
-            .navbar, .filter-card, #history-list { display: none !important; }
-            #print-area { display: block !important; }
-            .page-container { break-after: page; width: 210mm; padding: 10mm; }
-            .print-job-item { border: 1px solid #000; margin-bottom: 10px; height: 85mm; display: flex; flex-direction: column; }
-            .print-header { background: #34495e !important; color: white !important; padding: 5px; font-weight: bold; font-size: 12px; }
-            .print-meta { font-size: 9px; padding: 5px; border-bottom: 1px solid #000; background: #f9f9f9 !important; }
-            .print-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; flex-grow: 1; }
-            .print-col { border-right: 1px solid #eee; text-align: center; padding: 5px; }
-            .print-img-box { height: 45mm; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; }
-            .print-img-box img { max-width: 100%; max-height: 100%; }
-            .print-desc { padding: 5px; font-size: 10px; }
+            @page { 
+                size: A4; 
+                margin: 15mm 12mm 10mm 12mm; 
+            }
+            html, body { 
+                background: #fff !important; 
+                font-family: Arial, Helvetica, sans-serif; 
+                margin: 0; 
+                padding: 0;
+            }
+            .navbar, .filter-card, #history-list, .btn-del { display: none !important; }
+            
+            #print-area { display: block !important; width: 100%; }
+
+            .page-container { 
+                width: 100%; 
+                min-height: 260mm; 
+                display: flex;
+                flex-direction: column;
+                page-break-after: always;
+                position: relative;
+            }
+
+            .page-container:last-child { page-break-after: auto; }
+
+            .print-main-header {
+                text-align: center;
+                border-bottom: 2px solid #000;
+                margin-bottom: 5mm;
+                padding-bottom: 2mm;
+            }
+            .print-main-header h1 { margin: 0; font-size: 16px; text-transform: uppercase; }
+            .print-main-header p { margin: 3px 0 0; font-size: 9px; }
+
+            .print-items-body { flex-grow: 1; }
+
+            .print-job-item { 
+                border: 1px solid #000; 
+                margin-bottom: 5mm; 
+                page-break-inside: avoid;
+            }
+
+            .print-header { 
+                background: #f2f2f2 !important; 
+                padding: 5px 10px; 
+                font-weight: bold; 
+                font-size: 10px; 
+                display: flex;
+                justify-content: space-between;
+                border-bottom: 1px solid #000;
+            }
+
+            .print-meta-location { 
+                font-size: 8.5px; 
+                padding: 4px 10px; 
+                border-bottom: 1px solid #000; 
+                display: flex;
+            }
+            .print-meta-location strong { width: 45px; flex-shrink: 0; }
+
+            .print-grid { 
+                display: grid; 
+                grid-template-columns: 1fr 1fr 1fr; 
+                border-bottom: 1px solid #000;
+            }
+
+            .print-col { 
+                border-right: 1px solid #000; 
+                display: flex; 
+                flex-direction: column; 
+                align-items: center; 
+                padding: 5px 2px;
+                background: #fff !important;
+            }
+            .print-col:last-child { border-right: none; }
+            .col-title { font-size: 8px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; color: #555; }
+
+            /* PERBAIKAN KOTAK GAMBAR */
+            .print-img-box { 
+                width: 58mm; 
+                height: 42mm; /* Ukuran proporsional */
+                border: 1px solid #ddd; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                overflow: hidden; 
+                background: #f9f9f9 !important; /* Agar terlihat batasnya jika foto portrait */
+            }
+            
+            .print-img-box img { 
+                width: 100%; 
+                height: 100%; 
+                /* SAMA DENGAN FORM INPUT: agar gambar terlihat utuh */
+                object-fit: contain; 
+            }
+
+            .no-photo { font-size: 8px; color: #bbb; font-style: italic; }
+
+            .print-desc { 
+                padding: 8px 10px; 
+                font-size: 9.5px; 
+                line-height: 1.5; 
+            }
+
+            .print-footer-page { 
+                margin-top: auto; 
+                text-align: right;
+                font-size: 9px; 
+                font-style: italic;
+                font-weight: bold;
+                padding: 5mm 0 2mm 0;
+            }
         }
     </style>
 </head>
@@ -45,7 +151,8 @@
 
 <div class="container">
     <div class="filter-card">
-        <input type="date" id="f-date" onchange="updateUI()" style="width:100%; padding:10px;">
+        <label style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 5px;">FILTER TANGGAL:</label>
+        <input type="date" id="f-date" onchange="updateUI()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; margin-bottom: 10px;">
         <button class="btn-print-full" id="print-btn" onclick="generatePrintView()" disabled>🖨️ Cetak Terpilih (0)</button>
     </div>
     <div id="history-list"></div>
@@ -58,17 +165,16 @@
         const fd = document.getElementById('f-date').value;
         let data = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
         if(fd) data = data.filter(h => h.date === fd);
-        
-        data.sort((a,b) => new Date(b.date) - new Date(a.date));
+        data.sort((a,b) => b.id - a.id);
 
         const listDiv = document.getElementById('history-list');
         listDiv.innerHTML = data.map(h => `
             <div class="report-card-wrapper">
-                <input type="checkbox" class="report-cb" value="${h.id}" onchange="updateBtn()" style="width:20px; height:20px;">
+                <input type="checkbox" class="report-cb" value="${h.id}" onchange="updateBtn()" style="width:22px; height:22px;">
                 <div class="report-card-preview" onclick="restoreToEditor(${h.id})">
                     <button class="btn-del" onclick="deleteItem(event, ${h.id})">Hapus</button>
                     <div style="font-weight:bold; font-size:14px; color:#2c3e50;">📅 ${h.timestamp}</div>
-                    <div style="font-size:11px; color:#7f8c8d;">📦 ${h.data.length} Item | ${h.saveInfo}</div>
+                    <div style="font-size:11px; color:#7f8c8d;">📦 ${h.data.length} Item Pekerjaan</div>
                 </div>
             </div>`).join('');
         updateBtn();
@@ -81,7 +187,6 @@
     }
 
     function restoreToEditor(id) {
-        if(!confirm("Edit data ini? (Data lama akan ditimpa saat simpan)")) return;
         const history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
         const entry = history.find(h => h.id === id);
         localStorage.setItem('lapdok_draft', JSON.stringify(entry.data));
@@ -92,38 +197,91 @@
     function generatePrintView() {
         const selectedIds = Array.from(document.querySelectorAll('.report-cb:checked')).map(cb => parseFloat(cb.value));
         const allHistory = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
-        const dataToPrint = allHistory.filter(h => selectedIds.includes(h.id));
+        const reports = allHistory.filter(h => selectedIds.includes(h.id));
 
         const target = document.getElementById('print-content-target');
         target.innerHTML = '';
 
-        let items = [];
-        dataToPrint.forEach(h => h.data.forEach(d => items.push(d)));
+        let allItems = [];
+        reports.forEach(r => r.data.forEach(d => allItems.push(d)));
+        allItems.sort((a, b) => new Date(a.workDate) - new Date(b.workDate));
 
-        for (let i = 0; i < items.length; i += 3) {
-            const chunk = items.slice(i, i + 3);
+        if (allItems.length === 0) return;
+
+        const itemsPerPage = 3; 
+        const totalPages = Math.ceil(allItems.length / itemsPerPage);
+        
+        for (let i = 0; i < allItems.length; i += itemsPerPage) {
+            const pageNum = Math.floor(i / itemsPerPage) + 1;
+            const chunk = allItems.slice(i, i + itemsPerPage);
+            
             const page = document.createElement('div');
             page.className = 'page-container';
-            page.innerHTML = `<h2 style="text-align:center;">DOKUMENTASI PEKERJAAN</h2>` + chunk.map((item, idx) => `
+            
+            let html = `
+                <div class="print-main-header">
+                    <h1>DOKUMENTASI LAPORAN PEKERJAAN</h1>
+                    <p>Dicetak pada: ${new Date().toLocaleString('id-ID')}</p>
+                </div>
+                <div class="print-items-body">`;
+            
+            html += chunk.map((item, idx) => {
+                const displayDate = new Date(item.workDate).toLocaleDateString('id-ID', {
+                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                });
+
+                return `
                 <div class="print-job-item">
-                    <div class="print-header">ITEM #${i + idx + 1}</div>
-                    <div class="print-meta">
-                        <strong>TANGGAL:</strong> ${new Date(item.workDate).toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long', year:'numeric'})} <br>
-                        <strong>LOKASI:</strong> ${item.addr}
+                    <div class="print-header">
+                        <span>ITEM #${i + idx + 1}</span>
+                        <span>${displayDate}</span>
+                    </div>
+                    <div class="print-meta-location">
+                        <strong>LOKASI</strong>
+                        <span>: ${item.addr || '-'}</span>
                     </div>
                     <div class="print-grid">
-                        <div class="print-col">SEBELUM<div class="print-img-box">${item.p1 ? `<img src="${item.p1}">`:''}</div></div>
-                        <div class="print-col">PROSES<div class="print-img-box">${item.p2 ? `<img src="${item.p2}">`:''}</div></div>
-                        <div class="print-col">SESUDAH<div class="print-img-box">${item.p3 ? `<img src="${item.p3}">`:''}</div></div>
+                        <div class="print-col">
+                            <span class="col-title">Sebelum</span>
+                            <div class="print-img-box">
+                                ${item.p1 ? `<img src="${item.p1}">` : '<span class="no-photo">(Tidak ada foto)</span>'}
+                            </div>
+                        </div>
+                        <div class="print-col">
+                            <span class="col-title">Proses</span>
+                            <div class="print-img-box">
+                                ${item.p2 ? `<img src="${item.p2}">` : '<span class="no-photo">(Tidak ada foto)</span>'}
+                            </div>
+                        </div>
+                        <div class="print-col">
+                            <span class="col-title">Sesudah</span>
+                            <div class="print-img-box">
+                                ${item.p3 ? `<img src="${item.p3}">` : '<span class="no-photo">(Tidak ada foto)</span>'}
+                            </div>
+                        </div>
                     </div>
-                    <div class="print-desc"><strong>KET:</strong> ${item.desc}</div>
-                </div>`).join('');
+                    <div class="print-desc">
+                        <strong>KETERANGAN:</strong> ${(item.desc || '-').replace(/\n/g, '<br>')}
+                    </div>
+                </div>`;
+            }).join('');
+            
+            html += `</div><div class="print-footer-page">Halaman ${pageNum} dari ${totalPages}</div>`;
+            page.innerHTML = html;
             target.appendChild(page);
         }
-        setTimeout(() => window.print(), 500);
+
+        setTimeout(() => { window.print(); }, 1000);
     }
 
-    function deleteItem(e, id) { e.stopPropagation(); if(confirm("Hapus?")) { let h = JSON.parse(localStorage.getItem('lapdok_history')); localStorage.setItem('lapdok_history', JSON.stringify(h.filter(x=>x.id!==id))); updateUI(); } }
+    function deleteItem(e, id) { 
+        e.stopPropagation(); 
+        if(confirm("Hapus laporan?")) { 
+            let h = JSON.parse(localStorage.getItem('lapdok_history')); 
+            localStorage.setItem('lapdok_history', JSON.stringify(h.filter(x=>x.id!==id))); 
+            updateUI(); 
+        } 
+    }
 
     window.onload = updateUI;
 </script>
