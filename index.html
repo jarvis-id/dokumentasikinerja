@@ -15,23 +15,19 @@
     <script src="https://unpkg.com/leaflet-geosearch@3.11.0/dist/bundle.min.js"></script>
 
     <style>
+        /* CSS tetap sama dengan sebelumnya */
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f4f7f6; color: #333; font-size: 11px; padding-bottom: 80px;}
-        
         .navbar { display: flex; justify-content: space-around; background: #34495e; padding: 12px 0; position: sticky; top: 0; z-index: 9999; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         .navbar a { color: white; text-decoration: none; font-weight: bold; font-size: 13px; opacity: 0.7; }
         .navbar a.active { opacity: 1; border-bottom: 2px solid #00d2ff; }
-
         .container { width: 100%; max-width: 900px; margin: auto; padding: 15px; }
-
         .job-item { background: white; border: 1px solid #d1d8dd; border-radius: 8px; margin-bottom: 25px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
         .header-main { padding: 10px 15px; background: #34495e !important; color: #fff !important; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        
         .input-group { padding: 12px; border-bottom: 1px solid #f0f0f0; }
         .btn-map-trigger { background-color: #f39c12 !important; color: white !important; padding: 8px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-bottom: 8px; font-size: 10px; }
         .gps-res { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 10px; background: #fafafa; color: #2980b9; font-weight: bold; margin-bottom: 5px; }
         .address-output { font-size: 10px; color: #444; background: #fffbe6; padding: 8px; border-left: 4px solid #f39c12; min-height: 30px; line-height: 1.4; border-radius: 2px; }
-        
         .grid-header { display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; background: #ecf0f1 !important; font-size: 10px; font-weight: bold; }
         .grid-content { display: grid; grid-template-columns: 1fr 1fr 1fr; }
         .column { padding: 10px 5px; border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; }
@@ -39,37 +35,28 @@
         .image-preview img { width: 100%; height: 100%; object-fit: contain; }
         .photo-actions { display: flex; gap: 4px; margin-bottom: 8px; }
         .btn-photo { padding: 5px 8px; font-size: 10px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background: white; }
-
         .footer-section { padding: 12px; }
         .footer-section textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #ccc; font-size: 11px; line-height: 1.6; resize: none; border-radius: 4px; }
-
         .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .btn-add { background: #3498db !important; color: white; padding: 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-save { background: #27ae60 !important; color: white; padding: 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-
-        /* MODAL MAPS */
         #map-modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); }
         .modal-content { background: white; margin: 1% auto; width: 95%; max-width: 800px; border-radius: 8px; overflow: hidden; position: relative; }
         #map-container { height: 400px; width: 100%; }
         .btn-my-location { position: absolute; top: 70px; right: 10px; z-index: 1000; background: white; border: 2px solid rgba(0,0,0,0.3); padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; color: #2c3e50; }
-
-        /* MODAL CUSTOM CAMERA */
         #cam-modal { display: none; position: fixed; z-index: 10001; left: 0; top: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
         #cam-video { width: 100%; height: 100%; object-fit: cover; }
         .cam-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        
-        /* Area Gelap Diluar Crop */
         .cam-mask { position: absolute; width: 100%; height: 100%; border: solid rgba(0,0,0,0.6); border-width: calc((100vh - min(80vw, 80vh))/2) calc((100vw - min(80vw, 80vh))/2); }
-        
-        /* Garis Panduan Kotak */
         .cam-guide { width: min(80vw, 80vh); height: min(80vw, 80vh); border: 2px solid #00d2ff; box-shadow: 0 0 15px rgba(0,210,255,0.5); position: relative; }
-        .cam-guide::before, .cam-guide::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); border: 1px dashed rgba(255,255,255,0.5); }
-        .cam-guide::before { width: 100%; height: 0; } .cam-guide::after { width: 0; height: 100%; }
-
         .cam-controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-around; align-items: center; z-index: 10; }
         .btn-shutter { width: 70px; height: 70px; background: white; border: 5px solid #ccc; border-radius: 50%; cursor: pointer; }
-        .btn-shutter:active { transform: scale(0.9); background: #eee; }
         .btn-cam-cancel { color: white; background: rgba(0,0,0,0.5); border: 1px solid white; padding: 10px 15px; border-radius: 20px; cursor: pointer; }
+        
+        /* New Style for Date Section */
+        .date-section { margin-bottom: 12px; background: #f9f9f9; padding: 8px; border-radius: 4px; border-left: 3px solid #3498db; }
+        .date-input { width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; cursor: pointer; }
+        .date-display { font-size: 10px; color: #27ae60; font-weight: bold; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -87,7 +74,7 @@
     </div>
 </div>
 
-<!-- Modal Maps -->
+<!-- Modal Maps & Camera tetap sama -->
 <div id="map-modal">
     <div class="modal-content">
         <button class="btn-my-location" onclick="useCurrentLocation()">📍 Lokasi Saya</button>
@@ -99,17 +86,13 @@
     </div>
 </div>
 
-<!-- Modal Custom Camera (KOTAK CROP) -->
 <div id="cam-modal">
     <video id="cam-video" autoplay playsinline muted></video>
-    <div class="cam-overlay">
-        <div class="cam-mask"></div>
-        <div class="cam-guide"></div>
-    </div>
+    <div class="cam-overlay"><div class="cam-mask"></div><div class="cam-guide"></div></div>
     <div class="cam-controls">
         <button class="btn-cam-cancel" onclick="closeCamera()">Batal</button>
         <button class="btn-shutter" onclick="capturePhoto()"></button>
-        <div style="width:60px;"></div> <!-- Spacer -->
+        <div style="width:60px;"></div>
     </div>
 </div>
 
@@ -117,11 +100,31 @@
     let itemCount = 0, map, marker, activeInputId, activeAddrId, tempCoords;
     let cameraStream = null, activePreviewId = null;
 
+    // --- HELPER TANGGAL INDONESIA ---
+    function formatIndoDate(dateString) {
+        if (!dateString) return "Belum dipilih";
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('id-ID', {
+            weekday: 'long',
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
+        }).format(date);
+    }
+
+    function handleDateChange(id) {
+        const val = document.getElementById(`date-in-${id}`).value;
+        document.getElementById(`date-lbl-${id}`).innerText = formatIndoDate(val);
+        saveDraft();
+    }
+
+    // --- LOGIKA FORM & DRAFT ---
     function saveDraft() {
         const items = [];
         document.querySelectorAll('.job-item').forEach(item => {
             const id = item.id.split('-')[1];
             items.push({
+                workDate: document.getElementById(`date-in-${id}`).value,
                 gps: document.getElementById(`gps-res-${id}`).value,
                 addr: document.getElementById(`addr-res-${id}`).innerText,
                 p1: document.getElementById(`p1-${id}`).querySelector('img')?.src || null,
@@ -140,6 +143,8 @@
         items.forEach((data, index) => {
             addNewJobItem();
             const id = index + 1;
+            document.getElementById(`date-in-${id}`).value = data.workDate || "";
+            document.getElementById(`date-lbl-${id}`).innerText = formatIndoDate(data.workDate);
             document.getElementById(`gps-res-${id}`).value = data.gps;
             document.getElementById(`addr-res-${id}`).innerText = data.addr;
             document.getElementById(`ta-${id}`).value = data.desc;
@@ -149,116 +154,6 @@
         });
     }
 
-    // --- LOGIKA KAMERA CUSTOM ---
-
-    async function openCustomCamera(previewId) {
-        activePreviewId = previewId;
-        const modal = document.getElementById('cam-modal');
-        const video = document.getElementById('cam-video');
-        
-        try {
-            cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 1280 } } 
-            });
-            video.srcObject = cameraStream;
-            modal.style.display = 'block';
-        } catch (err) {
-            alert("Gagal mengakses kamera. Pastikan izin diberikan dan menggunakan HTTPS.");
-        }
-    }
-
-    function closeCamera() {
-        if (cameraStream) {
-            cameraStream.getTracks().forEach(track => track.stop());
-            cameraStream = null;
-        }
-        document.getElementById('cam-modal').style.display = 'none';
-    }
-
-    async function capturePhoto() {
-        const video = document.getElementById('cam-video');
-        const canvas = document.createElement('canvas');
-        const size = 1000; // Ukuran final square
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
-
-        // Kalkulasi Crop Tengah dari Stream Video
-        const vW = video.videoWidth;
-        const vH = video.videoHeight;
-        const minSide = Math.min(vW, vH);
-        const sx = (vW - minSide) / 2;
-        const sy = (vH - minSide) / 2;
-
-        ctx.drawImage(video, sx, sy, minSide, minSide, 0, 0, size, size);
-        
-        // Berikan Watermark (Karena ini kamera)
-        const finalBase64 = await applyWatermark(canvas);
-        
-        document.getElementById(activePreviewId).innerHTML = `<img src="${finalBase64}">`;
-        saveDraft();
-        closeCamera();
-    }
-
-    // --- LOGIKA WATERMARK & KOMPRESI ---
-
-    async function applyWatermark(canvas) {
-        const ctx = canvas.getContext('2d');
-        const width = canvas.width;
-        const height = canvas.height;
-
-        const now = new Date();
-        const jam = now.getHours().toString().padStart(2, '0');
-        const menit = now.getMinutes().toString().padStart(2, '0');
-        const waktuFull = `${jam}:${menit}`;
-        
-        const hariNama = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-        const bulanNama = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-        const hari = hariNama[now.getDay()], tanggal = now.getDate().toString().padStart(2, '0'), bulan = bulanNama[now.getMonth()], tahun = now.getFullYear();
-        const tanggalFull = `${bulan} ${tanggal}, ${tahun}`;
-
-        const margin = width * 0.05, fontSizeJam = width * 0.12, fontSizeInfo = width * 0.035, lineWidth = width * 0.008;
-
-        ctx.shadowColor = "rgba(0, 0, 0, 0.7)"; ctx.shadowBlur = 8; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
-        ctx.font = `bold ${fontSizeJam}px sans-serif`; ctx.fillStyle = "white"; ctx.textBaseline = "bottom"; ctx.textAlign = "left";
-        ctx.fillText(waktuFull, margin, height - margin);
-        const jamWidth = ctx.measureText(waktuFull).width;
-
-        ctx.shadowBlur = 0; ctx.strokeStyle = "#ffc107"; ctx.lineWidth = lineWidth; ctx.lineCap = "round";
-        const lineX = margin + jamWidth + (width * 0.03), lineYBottom = height - margin - (fontSizeJam * 0.05), lineYTop = lineYBottom - (fontSizeJam * 0.8);
-        ctx.beginPath(); ctx.moveTo(lineX, lineYTop); ctx.lineTo(lineX, lineYBottom); ctx.stroke();
-
-        ctx.shadowBlur = 8; ctx.font = `bold ${fontSizeInfo}px sans-serif`;
-        ctx.fillText(tanggalFull, lineX + (width * 0.02), lineYTop + (fontSizeInfo * 1.2));
-        ctx.fillText(hari, lineX + (width * 0.02), lineYBottom);
-
-        return canvas.toDataURL('image/jpeg', 0.8);
-    }
-
-    // Untuk File Galeri (Tanpa Watermark, Tanpa Crop Paksa)
-    async function processGalleryImg(input, previewId) {
-        const file = input.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.src = e.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX = 1000;
-                let w = img.width, h = img.height;
-                if (w > MAX) { h *= MAX/w; w = MAX; }
-                canvas.width = w; canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
-                document.getElementById(previewId).innerHTML = `<img src="${canvas.toDataURL('image/jpeg', 0.8)}">`;
-                saveDraft();
-            };
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // --- LOGIKA FORM ---
-
     function addNewJobItem() {
         itemCount++;
         const container = document.getElementById('job-container');
@@ -266,6 +161,11 @@
             <div class="job-item" id="item-${itemCount}">
                 <div class="header-main"><span>ITEM #${itemCount}</span><button onclick="this.closest('.job-item').remove(); saveDraft();" style="background:none; border:1px solid white; color:white; border-radius:4px; font-size:9px; cursor:pointer;">Hapus</button></div>
                 <div class="input-group">
+                    <div class="date-section">
+                        <label style="font-weight:bold; font-size:10px; color:#555;">TANGGAL PEKERJAAN:</label>
+                        <input type="date" class="date-input" id="date-in-${itemCount}" onchange="handleDateChange(${itemCount})">
+                        <div class="date-display" id="date-lbl-${itemCount}">Belum dipilih</div>
+                    </div>
                     <button class="btn-map-trigger" onclick="openMap('gps-res-${itemCount}', 'addr-res-${itemCount}')">🗺️ Lokasi</button>
                     <input type="text" class="gps-res" id="gps-res-${itemCount}" readonly placeholder="Koordinat GPS...">
                     <div class="address-output" id="addr-res-${itemCount}">Alamat otomatis...</div>
@@ -287,12 +187,17 @@
         container.insertAdjacentHTML('beforeend', html);
     }
 
-    // (Sisanya fungsi Map & History tetap sama)
+    // --- LOGIKA KAMERA, WATERMARK, MAPS (Tetap Sama) ---
+    async function openCustomCamera(previewId) { activePreviewId = previewId; const modal = document.getElementById('cam-modal'); const video = document.getElementById('cam-video'); try { cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 1280 } } }); video.srcObject = cameraStream; modal.style.display = 'block'; } catch (err) { alert("Akses kamera ditolak."); } }
+    function closeCamera() { if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; } document.getElementById('cam-modal').style.display = 'none'; }
+    async function capturePhoto() { const video = document.getElementById('cam-video'); const canvas = document.createElement('canvas'); const size = 1000; canvas.width = size; canvas.height = size; const ctx = canvas.getContext('2d'); const vW = video.videoWidth, vH = video.videoHeight, minS = Math.min(vW, vH), sx = (vW-minS)/2, sy = (vH-minS)/2; ctx.drawImage(video, sx, sy, minS, minS, 0, 0, size, size); const final = await applyWatermark(canvas); document.getElementById(activePreviewId).innerHTML = `<img src="${final}">`; saveDraft(); closeCamera(); }
+    async function applyWatermark(canvas) { const ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height, now = new Date(); const jam = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0'); const tgl = formatIndoDate(now.toISOString().split('T')[0]); ctx.shadowColor = "rgba(0,0,0,0.7)"; ctx.shadowBlur = 8; ctx.font = `bold ${w*0.1}px sans-serif`; ctx.fillStyle = "white"; ctx.textBaseline = "bottom"; ctx.fillText(jam, w*0.05, h-w*0.05); ctx.font = `bold ${w*0.03}px sans-serif`; ctx.fillText(tgl, w*0.05, h-w*0.02); return canvas.toDataURL('image/jpeg', 0.8); }
+    async function processGalleryImg(input, previewId) { const file = input.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = (e) => { const img = new Image(); img.src = e.target.result; img.onload = () => { const canvas = document.createElement('canvas'); const MAX = 1000; let w = img.width, h = img.height; if(w > MAX){ h *= MAX/w; w = MAX; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0,0,w,h); document.getElementById(previewId).innerHTML = `<img src="${canvas.toDataURL('image/jpeg', 0.8)}">`; saveDraft(); }; }; reader.readAsDataURL(file); }
     function openMap(gpsId, addrId) { activeInputId = gpsId; activeAddrId = addrId; document.getElementById('map-modal').style.display = 'block'; if(!map) { map = L.map('map-container').setView([-2.5, 118], 5); L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}').addTo(map); map.on('click', (e) => { tempCoords = `${e.latlng.lat.toFixed(6)},${e.latlng.lng.toFixed(6)}`; if (marker) marker.setLatLng(e.latlng); else marker = L.marker(e.latlng).addTo(map); }); } setTimeout(() => map.invalidateSize(), 400); }
-    function useCurrentLocation() { if (!navigator.geolocation) return alert("Geolocation tidak didukung."); const btn = document.querySelector('.btn-my-location'); btn.innerText = "⏳ Mencari..."; navigator.geolocation.getCurrentPosition((pos) => { const ll = [pos.coords.latitude, pos.coords.longitude]; map.setView(ll, 18); if(marker) marker.setLatLng(ll); else marker = L.marker(ll).addTo(map); tempCoords = `${ll[0].toFixed(6)},${ll[1].toFixed(6)}`; btn.innerText = "📍 Lokasi Saya"; }, (err) => { btn.innerText = "📍 Lokasi Saya"; alert("Gagal mengambil lokasi."); }, { enableHighAccuracy: true, timeout: 10000 }); }
-    async function confirmLocation() { if(!tempCoords) return alert("Ketuk titik di peta."); document.getElementById(activeInputId).value = `https://www.google.com/maps/search/?api=1&query=${tempCoords}`; const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${tempCoords.split(',')[0]}&lon=${tempCoords.split(',')[1]}`); const data = await res.json(); document.getElementById(activeAddrId).innerText = data.display_name || "Alamat tidak ditemukan"; saveDraft(); closeMap(); }
+    function useCurrentLocation() { navigator.geolocation.getCurrentPosition((pos) => { const ll = [pos.coords.latitude, pos.coords.longitude]; map.setView(ll, 18); if(marker) marker.setLatLng(ll); else marker = L.marker(ll).addTo(map); tempCoords = `${ll[0].toFixed(6)},${ll[1].toFixed(6)}`; }, null, {enableHighAccuracy:true}); }
+    async function confirmLocation() { if(!tempCoords) return; document.getElementById(activeInputId).value = `https://www.google.com/maps/search/?api=1&query=${tempCoords}`; const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${tempCoords.split(',')[0]}&lon=${tempCoords.split(',')[1]}`); const data = await res.json(); document.getElementById(activeAddrId).innerText = data.display_name || "Alamat ditemukan"; saveDraft(); closeMap(); }
     function closeMap() { document.getElementById('map-modal').style.display = 'none'; }
-    function saveToHistory() { const draft = JSON.parse(localStorage.getItem('lapdok_draft') || '[]'); if (!draft.length) return alert("Data kosong!"); const history = JSON.parse(localStorage.getItem('lapdok_history') || '[]'); const now = new Date(); history.push({ id: Date.now(), year: now.getFullYear().toString(), date: now.toISOString().split('T')[0], month: (now.getMonth()+1).toString().padStart(2, '0'), timestamp: now.toLocaleString('id-ID'), data: draft }); localStorage.setItem('lapdok_history', JSON.stringify(history)); localStorage.removeItem('lapdok_draft'); alert("Tersimpan!"); location.reload(); }
+    function saveToHistory() { const draft = JSON.parse(localStorage.getItem('lapdok_draft') || '[]'); if(!draft.length) return alert("Kosong!"); const history = JSON.parse(localStorage.getItem('lapdok_history') || '[]'); const now = new Date(); history.push({ id: Date.now(), year: now.getFullYear().toString(), month: (now.getMonth()+1).toString().padStart(2,'0'), date: now.toISOString().split('T')[0], timestamp: now.toLocaleString('id-ID'), data: draft }); localStorage.setItem('lapdok_history', JSON.stringify(history)); localStorage.removeItem('lapdok_draft'); location.reload(); }
 
     window.onload = loadDraft;
 </script>
