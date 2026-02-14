@@ -1,11 +1,12 @@
 {
-  "name": "INSTALL ABSENSI",
+  "name": "ABSENSI",
   "short_name": "ABSENSI",
-  "description": "Aplikasi Absensi PDAM One",
-  "start_url": "https://pdamone.amertatoraya.com",
+  "description": "Launcher Absensi PDAM One",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0056b3",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/jarvis-id/dokumentasikinerja/main/songkang/logosigap.png",
