@@ -4,62 +4,103 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>INSTALL ABSENSI</title>
-    
-    <!-- Link ke Manifest -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0056b3">
-    <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/jarvis-id/dokumentasikinerja/main/songkang/logosigap.png">
+    
+    <script>
+        // LOGIKA REDIRECT OTOMATIS
+        // Jika aplikasi dibuka dalam mode "standalone" (setelah diinstal ke HP)
+        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+            window.location.href = "https://pdamone.amertatoraya.com/";
+        }
+    </script>
 
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: sans-serif; }
-        iframe { width: 100%; height: 100%; border: none; }
-        #install-banner {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: #0056b3; color: white; padding: 15px;
-            text-align: center; display: none; z-index: 9999;
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
+            text-align: center;
         }
-        button { background: white; color: #0056b3; border: none; padding: 10px 20px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 300px;
+        }
+        img { width: 100px; height: 100px; border-radius: 15px; margin-bottom: 20px; }
+        h2 { margin: 10px 0; color: #333; }
+        p { color: #666; font-size: 14px; margin-bottom: 25px; }
+        #btnInstall {
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            display: none; /* Muncul jika browser mendukung install */
+            width: 100%;
+        }
+        .footer { margin-top: 20px; font-size: 12px; color: #aaa; }
     </style>
 </head>
 <body>
 
-    <!-- Banner Install (Akan muncul di Android jika belum terinstal) -->
-    <div id="install-banner">
-        Klik untuk menginstal aplikasi: 
-        <button id="btnInstall">INSTALL ABSENSI</button>
+    <div class="card">
+        <img src="https://raw.githubusercontent.com/jarvis-id/dokumentasikinerja/main/songkang/logosigap.png" alt="Logo">
+        <h2>ABSENSI</h2>
+        <p>Instal aplikasi ini di layar utama HP Anda untuk akses cepat.</p>
+        
+        <button id="btnInstall">INSTAL SEKARANG</button>
+        
+        <div id="msgManual" style="display:none;">
+            <small>Klik titik tiga (⋮) di pojok kanan atas Chrome, lalu pilih <b>"Instal Aplikasi"</b> atau <b>"Tambahkan ke Layar Utama"</b>.</small>
+        </div>
     </div>
 
-    <!-- Menampilkan Halaman PDAM -->
-    <iframe src="https://pdamone.amertatoraya.com"></iframe>
+    <div class="footer">PDAM Amerta Toraya</div>
 
     <script>
         // Registrasi Service Worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-            .then(() => console.log("Service Worker Registered"));
+            navigator.serviceWorker.register('sw.js');
         }
 
-        // Logika Tombol Install
         let deferredPrompt;
-        const installBanner = document.getElementById('install-banner');
         const btnInstall = document.getElementById('btnInstall');
+        const msgManual = document.getElementById('msgManual');
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            installBanner.style.display = 'block';
+            btnInstall.style.display = 'block';
         });
 
-        btnInstall.addEventListener('click', (e) => {
-            installBanner.style.display = 'none';
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    console.log('User accepted the install prompt');
+        btnInstall.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    btnInstall.style.display = 'none';
                 }
                 deferredPrompt = null;
-            });
+            }
         });
+
+        // Jika dalam 3 detik tombol instal tidak muncul, tampilkan panduan manual
+        setTimeout(() => {
+            if (btnInstall.style.display === 'none') {
+                msgManual.style.display = 'block';
+            }
+        }, 3000);
     </script>
 </body>
 </html>
