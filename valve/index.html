@@ -3,59 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Input Laporan Valve</title>
+    <title>Input Laporan Valve - DokKiner</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#2c3e50">
 
+    <!-- Leaflet JS (Peta) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
+        /* Gaya Dasar */
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; background-color: #f4f7f6; color: #333; font-size: 11px; padding-bottom: 80px;}
         
+        /* Navigasi */
         .navbar { display: flex; justify-content: space-around; background: #2c3e50; padding: 12px 0; position: sticky; top: 0; z-index: 999; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         .navbar a { color: white; text-decoration: none; font-weight: bold; font-size: 13px; opacity: 0.7; }
         .navbar a.active { opacity: 1; border-bottom: 2px solid #00d2ff; }
 
         .container { width: 100%; max-width: 800px; margin: auto; padding: 15px; }
+
+        /* Banner Edit Mode */
         #edit-banner { display: none; background: #e67e22; color: white; padding: 12px; border-radius: 6px; margin-bottom: 15px; text-align: center; font-weight: bold; }
 
+        /* Item Pekerjaan */
         .job-item { background: white; border: 1px solid #d1d8dd; border-radius: 8px; margin-bottom: 25px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
         .header-main { padding: 10px 15px; background: #2c3e50; color: #fff; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         
         .input-group { padding: 12px; border-bottom: 1px solid #f0f0f0; }
         .date-section { margin-bottom: 12px; background: #f9f9f9; padding: 8px; border-radius: 4px; border-left: 4px solid #3498db; }
-        .date-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; }
+        .date-input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; cursor: pointer; }
 
+        /* GPS & Alamat */
         .btn-map-trigger { background-color: #f39c12; color: white; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 8px; }
         .gps-res { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 10px; background: #fafafa; color: #2980b9; font-weight: bold; margin-bottom: 5px; }
-        .address-output { font-size: 10px; color: #444; background: #fffbe6; padding: 8px; border-left: 4px solid #f39c12; min-height: 30px; }
+        .address-output { font-size: 10px; color: #444; background: #fffbe6; padding: 8px; border-left: 4px solid #f39c12; min-height: 30px; line-height: 1.4; }
         
-        /* 2 COLUMN GRID */
-        .grid-header { display: grid; grid-template-columns: 1fr 1fr; text-align: center; background: #ecf0f1; font-size: 10px; font-weight: bold; padding: 8px 0; border-bottom: 1px solid #ddd; }
+        /* GRID 2 KOLOM (Buka & Tutup) */
+        .grid-header { display: grid; grid-template-columns: 1fr 1fr; text-align: center; background: #ecf0f1; font-size: 10px; font-weight: bold; padding: 8px 0; border-bottom: 1px solid #ddd;}
         .grid-content { display: grid; grid-template-columns: 1fr 1fr; }
-        .column { padding: 15px 10px; border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; }
+        .column { padding: 10px; border-right: 1px solid #eee; display: flex; flex-direction: column; align-items: center; }
         .column:last-child { border-right: none; }
         
         .image-preview { width: 100%; aspect-ratio: 4/3; border: 2px dashed #ddd; border-radius: 4px; display: flex; justify-content: center; align-items: center; background: #fafafa; overflow: hidden; margin-top: 5px; }
         .image-preview img { width: 100%; height: 100%; object-fit: contain; }
         
-        .photo-actions { display: flex; gap: 8px; margin-bottom: 8px; }
-        .btn-photo { padding: 10px 15px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background: white; }
+        .photo-actions { display: flex; gap: 6px; margin-bottom: 8px; }
+        .btn-photo { padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background: white; }
 
         .footer-section { padding: 12px; background: #fcfcfc; }
-        .footer-section textarea { width: 100%; min-height: 60px; padding: 10px; border: 1px solid #ccc; font-size: 11px; border-radius: 4px; }
+        .footer-section textarea { width: 100%; min-height: 60px; padding: 10px; border: 1px solid #ccc; font-size: 11px; resize: none; border-radius: 4px; }
 
+        /* Tombol Aksi Bawah */
         .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
-        .btn-add { background: #3498db; color: white; padding: 15px; border: none; border-radius: 6px; font-weight: bold; }
-        .btn-save { background: #27ae60; color: white; padding: 15px; border: none; border-radius: 6px; font-weight: bold; }
+        .btn-add { background: #3498db; color: white; padding: 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-save { background: #27ae60; color: white; padding: 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-        /* MODALS */
-        #map-modal, #cam-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
+        /* MODAL MAPS */
+        #map-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
         .modal-content { background: white; margin: 5% auto; width: 95%; max-width: 600px; border-radius: 8px; overflow: hidden; position: relative; }
         #map-container { height: 350px; width: 100%; }
+        
+        /* MODAL CAMERA */
+        #cam-modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
         #cam-video { width: 100%; height: 100%; object-fit: cover; }
         .cam-controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-around; align-items: center; }
         .btn-shutter { width: 70px; height: 70px; background: white; border-radius: 50%; border: 5px solid #ccc; }
@@ -65,15 +76,20 @@
 
 <nav class="navbar">
     <a href="index.html" class="active">📝 Input Valve</a>
-    <a href="tampildata.html">📂 Riwayat</a>
+    <a href="tampildata.html">📂 Riwayat Laporan</a>
 </nav>
 
 <div class="container">
-    <div id="edit-banner">⚠️ MODE EDIT AKTIF <button onclick="cancelEdit()">Batal</button></div>
+    <div id="edit-banner">
+        ⚠️ MODE EDIT: Perubahan akan menimpa data lama. <br> 
+        <button onclick="cancelEdit()" style="margin-top:5px; padding:5px; cursor:pointer;">Batal Edit</button>
+    </div>
+    
     <div id="job-container"></div>
+    
     <div class="actions">
-        <button class="btn-add" onclick="addNewJobItem()">+ Tambah Data Valve</button>
-        <button class="btn-save" onclick="saveToHistory()">💾 Simpan Laporan</button>
+        <button class="btn-add" onclick="addNewJobItem()">+ Tambah Titik Valve</button>
+        <button class="btn-save" onclick="saveToHistory()">💾 Simpan Ke Riwayat</button>
     </div>
 </div>
 
@@ -84,8 +100,8 @@
         <div style="padding:15px; display:flex; justify-content: space-between; align-items: center;">
             <span id="map-status" style="font-size:10px; color:#e67e22;"></span>
             <div>
-                <button onclick="closeMap()" style="padding:10px;">Batal</button>
-                <button onclick="confirmLocation()" style="padding:10px; background:#27ae60; color:white; border:none; border-radius:4px;">Pilih Lokasi</button>
+                <button onclick="closeMap()" style="padding:10px; cursor:pointer;">Batal</button>
+                <button onclick="confirmLocation()" style="padding:10px; background:#27ae60; color:white; border:none; border-radius:4px; cursor:pointer;">Pilih Lokasi</button>
             </div>
         </div>
     </div>
@@ -95,7 +111,7 @@
 <div id="cam-modal">
     <video id="cam-video" autoplay playsinline muted></video>
     <div class="cam-controls">
-        <button onclick="closeCamera()" style="color:white; background:none; border:none;">Batal</button>
+        <button onclick="closeCamera()" style="color:white; background:none; border:none; cursor:pointer;">Batal</button>
         <button class="btn-shutter" onclick="capturePhoto()"></button>
         <div style="width:40px;"></div>
     </div>
@@ -111,13 +127,14 @@
         return new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(dateString));
     }
 
+    // Fungsi membuat item input baru (2 KOLOM)
     function addNewJobItem() {
         itemCount++;
         const container = document.getElementById('job-container');
         const html = `
             <div class="job-item" id="item-${itemCount}">
                 <div class="header-main">
-                    <span>DATA VALVE #${itemCount}</span>
+                    <span>TITIK VALVE #${itemCount}</span>
                     <button onclick="this.closest('.job-item').remove(); saveDraft();" style="background:none; border:1px solid white; color:white; font-size:9px; cursor:pointer;">Hapus</button>
                 </div>
                 <div class="input-group">
@@ -125,35 +142,45 @@
                         <input type="date" class="date-input" id="date-in-${itemCount}" onchange="saveDraft()">
                     </div>
                     <button class="btn-map-trigger" onclick="openMap('gps-res-${itemCount}', 'addr-res-${itemCount}')">📍 Cari Lokasi Valve</button>
-                    <input type="text" class="gps-res" id="gps-res-${itemCount}" readonly placeholder="Koordinat GPS...">
-                    <div class="address-output" id="addr-res-${itemCount}">Alamat otomatis...</div>
+                    <input type="text" class="gps-res" id="gps-res-${itemCount}" readonly placeholder="Koordinat Google Maps...">
+                    <div class="address-output" id="addr-res-${itemCount}">Alamat akan muncul otomatis...</div>
                 </div>
-                <div class="grid-header"><div>BUKA VALVE</div><div>TUTUP VALVE</div></div>
+                
+                <div class="grid-header">
+                    <div>BUKA VALVE</div>
+                    <div>TUTUP VALVE</div>
+                </div>
+                
                 <div class="grid-content">
+                    <!-- Kolom 1: Buka -->
                     <div class="column">
                         <div class="photo-actions">
                             <button class="btn-photo" onclick="openCustomCamera('p1-${itemCount}')">📷</button>
                             <button class="btn-photo" onclick="document.getElementById('gal-1-${itemCount}').click()">📁</button>
                         </div>
                         <input type="file" id="gal-1-${itemCount}" accept="image/*" style="display:none" onchange="processGalleryImg(this, 'p1-${itemCount}')">
-                        <div class="image-preview" id="p1-${itemCount}"><span>Foto Buka</span></div>
+                        <div class="image-preview" id="p1-${itemCount}"><span>Preview Buka</span></div>
                     </div>
+                    
+                    <!-- Kolom 2: Tutup -->
                     <div class="column">
                         <div class="photo-actions">
                             <button class="btn-photo" onclick="openCustomCamera('p2-${itemCount}')">📷</button>
                             <button class="btn-photo" onclick="document.getElementById('gal-2-${itemCount}').click()">📁</button>
                         </div>
                         <input type="file" id="gal-2-${itemCount}" accept="image/*" style="display:none" onchange="processGalleryImg(this, 'p2-${itemCount}')">
-                        <div class="image-preview" id="p2-${itemCount}"><span>Foto Tutup</span></div>
+                        <div class="image-preview" id="p2-${itemCount}"><span>Preview Tutup</span></div>
                     </div>
                 </div>
+                
                 <div class="footer-section">
-                    <textarea id="ta-${itemCount}" oninput="saveDraft()" placeholder="Catatan/Kondisi Valve..."></textarea>
+                    <textarea id="ta-${itemCount}" oninput="saveDraft()" placeholder="Catatan tambahan (opsional)..."></textarea>
                 </div>
             </div>`;
         container.insertAdjacentHTML('beforeend', html);
     }
 
+    // --- LOGIKA MAPS ---
     function openMap(g, a) {
         activeInputId = g; activeAddrId = a;
         document.getElementById('map-modal').style.display = 'block';
@@ -164,6 +191,7 @@
         }
         setTimeout(() => { 
             map.invalidateSize(); 
+            document.getElementById('map-status').innerText = "🛰️ Mencari GPS...";
             map.locate({setView: true, maxZoom: 18});
         }, 400);
     }
@@ -172,6 +200,7 @@
         tempCoords = `${lat.toFixed(6)},${lng.toFixed(6)}`;
         if (marker) marker.setLatLng([lat, lng]);
         else marker = L.marker([lat, lng]).addTo(map);
+        document.getElementById('map-status').innerText = "📍 Titik dipilih.";
     }
 
     async function confirmLocation() {
@@ -188,6 +217,7 @@
 
     function closeMap() { document.getElementById('map-modal').style.display = 'none'; }
 
+    // --- PENYIMPANAN DATA (LOCALSTORAGE) ---
     function saveDraft() {
         const items = [];
         document.querySelectorAll('.job-item').forEach(item => {
@@ -214,7 +244,7 @@
             const id = index + 1;
             document.getElementById(`date-in-${id}`).value = data.workDate || "";
             document.getElementById(`gps-res-${id}`).value = data.gps || "";
-            document.getElementById(`addr-res-${id}`).innerText = data.addr || "Alamat otomatis...";
+            document.getElementById(`addr-res-${id}`).innerText = data.addr || "Alamat akan muncul otomatis...";
             document.getElementById(`ta-${id}`).value = data.desc || "";
             if(data.p1) document.getElementById(`p1-${id}`).innerHTML = `<img src="${data.p1}">`;
             if(data.p2) document.getElementById(`p2-${id}`).innerHTML = `<img src="${data.p2}">`;
@@ -223,11 +253,12 @@
 
     function saveToHistory() {
         const draft = JSON.parse(localStorage.getItem('valve_draft') || '[]');
-        if (!draft.length || draft.some(i => !i.workDate)) return alert("Mohon isi tanggal!");
+        if (!draft.length || draft.some(i => !i.workDate)) return alert("Mohon isi tanggal minimal satu item!");
         
         let history = JSON.parse(localStorage.getItem('valve_history') || '[]');
         if (editContextId) history = history.filter(h => h.id !== parseFloat(editContextId));
 
+        const now = new Date();
         history.push({
             id: Date.now(),
             date: draft[0].workDate,
@@ -238,17 +269,18 @@
         localStorage.setItem('valve_history', JSON.stringify(history));
         localStorage.removeItem('valve_draft');
         localStorage.removeItem('valve_edit_context');
-        alert("Laporan Berhasil Disimpan!");
+        alert("Berhasil disimpan ke riwayat!");
         location.href = "tampildata.html";
     }
 
+    // --- LOGIKA KAMERA ---
     async function openCustomCamera(p) { 
         activePreviewId = p; 
         try {
             cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
             document.getElementById('cam-video').srcObject = cameraStream;
             document.getElementById('cam-modal').style.display = 'block';
-        } catch(e) { alert("Kamera gagal diakses."); }
+        } catch(e) { alert("Akses kamera ditolak atau tidak tersedia."); }
     }
 
     function capturePhoto() {
@@ -284,7 +316,18 @@
         reader.readAsDataURL(file);
     }
 
-    function cancelEdit() { localStorage.removeItem('valve_draft'); localStorage.removeItem('valve_edit_context'); location.reload(); }
+    function cancelEdit() { 
+        localStorage.removeItem('valve_draft'); 
+        localStorage.removeItem('valve_edit_context'); 
+        location.reload(); 
+    }
+
+    // Registrasi PWA Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
+        });
+    }
 
     window.onload = loadDraft;
 </script>
