@@ -4,142 +4,48 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Riwayat Laporan - DokKiner</title>
+    <!-- Library untuk PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* ==========================================
-           CSS LAYAR (SCREEN)
-           ========================================== */
-        * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        /* CSS LAYAR */
+        * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background: #f4f7f6; color: #333; padding-bottom: 100px; }
         .navbar { display: flex; justify-content: space-around; background: #34495e; padding: 12px 0; position: sticky; top: 0; z-index: 9999; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .navbar a { color: white; text-decoration: none; font-weight: bold; font-size: 13px; opacity: 0.7; }
         .navbar a.active { opacity: 1; border-bottom: 2px solid #00d2ff; }
         .container { max-width: 900px; margin: auto; padding: 15px; }
         .filter-card { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #ddd; }
-        .btn-print-full { background: #27ae60; color: white; border: none; padding: 15px; border-radius: 6px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; font-size: 16px; }
-        .btn-print-full:disabled { background: #bdc3c7; cursor: not-allowed; }
+        
+        /* Tombol */
+        .btn-action { display: block; width: 100%; border: none; padding: 15px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; color: white; }
+        .btn-print { background: #27ae60; }
+        .btn-download { background: #3498db; }
+        .btn-action:disabled { background: #bdc3c7; cursor: not-allowed; }
+        
         .report-card-wrapper { display: flex; align-items: center; gap: 12px; background: white; margin-bottom: 10px; padding: 12px; border-radius: 8px; border: 1px solid #eee; }
         .report-card-preview { flex-grow: 1; cursor: pointer; position: relative; }
         .btn-del { position: absolute; right: 0; top: 0; background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; }
 
-        /* ==========================================
-           CSS CETAK (PRINT PDF) - FIX IMAGE & LAYOUT
-           ========================================== */
+        /* CSS CETAK/PDF */
         #print-area { display: none; }
-
         @media print {
-            @page { 
-                size: A4; 
-                margin: 15mm 12mm 10mm 12mm; 
-            }
-            html, body { 
-                background: #fff !important; 
-                font-family: Arial, Helvetica, sans-serif; 
-                margin: 0; 
-                padding: 0;
-            }
-            .navbar, .filter-card, #history-list, .btn-del { display: none !important; }
-            
-            #print-area { display: block !important; width: 100%; }
-
-            .page-container { 
-                width: 100%; 
-                min-height: 260mm; 
-                display: flex;
-                flex-direction: column;
-                page-break-after: always;
-                position: relative;
-            }
-
-            .page-container:last-child { page-break-after: auto; }
-
-            .print-main-header {
-                text-align: center;
-                border-bottom: 2px solid #000;
-                margin-bottom: 5mm;
-                padding-bottom: 2mm;
-            }
-            .print-main-header h1 { margin: 0; font-size: 16px; text-transform: uppercase; }
-            .print-main-header p { margin: 3px 0 0; font-size: 9px; }
-
-            .print-items-body { flex-grow: 1; }
-
-            .print-job-item { 
-                border: 1px solid #000; 
-                margin-bottom: 5mm; 
-                page-break-inside: avoid;
-            }
-
-            .print-header { 
-                background: #f2f2f2 !important; 
-                padding: 5px 10px; 
-                font-weight: bold; 
-                font-size: 10px; 
-                display: flex;
-                justify-content: space-between;
-                border-bottom: 1px solid #000;
-            }
-
-            .print-meta-location { 
-                font-size: 8.5px; 
-                padding: 4px 10px; 
-                border-bottom: 1px solid #000; 
-                display: flex;
-            }
-            .print-meta-location strong { width: 45px; flex-shrink: 0; }
-
-            .print-grid { 
-                display: grid; 
-                grid-template-columns: 1fr 1fr 1fr; 
-                border-bottom: 1px solid #000;
-            }
-
-            .print-col { 
-                border-right: 1px solid #000; 
-                display: flex; 
-                flex-direction: column; 
-                align-items: center; 
-                padding: 5px 2px;
-                background: #fff !important;
-            }
-            .print-col:last-child { border-right: none; }
-            .col-title { font-size: 8px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; color: #555; }
-
-            /* PERBAIKAN KOTAK GAMBAR */
-            .print-img-box { 
-                width: 58mm; 
-                height: 42mm; /* Ukuran proporsional */
-                border: 1px solid #ddd; 
-                display: flex; 
-                align-items: center; 
-                justify-content: center; 
-                overflow: hidden; 
-                background: #f9f9f9 !important; /* Agar terlihat batasnya jika foto portrait */
-            }
-            
-            .print-img-box img { 
-                width: 100%; 
-                height: 100%; 
-                /* SAMA DENGAN FORM INPUT: agar gambar terlihat utuh */
-                object-fit: contain; 
-            }
-
-            .no-photo { font-size: 8px; color: #bbb; font-style: italic; }
-
-            .print-desc { 
-                padding: 8px 10px; 
-                font-size: 9.5px; 
-                line-height: 1.5; 
-            }
-
-            .print-footer-page { 
-                margin-top: auto; 
-                text-align: right;
-                font-size: 9px; 
-                font-style: italic;
-                font-weight: bold;
-                padding: 5mm 0 2mm 0;
-            }
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
         }
+        
+        .page-container { width: 210mm; min-height: 296mm; padding: 15mm 12mm 10mm 12mm; background: white; page-break-after: always; position: relative; }
+        .print-main-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 5mm; padding-bottom: 2mm; }
+        .print-job-item { border: 1px solid #000; margin-bottom: 5mm; page-break-inside: avoid; }
+        .print-header { background: #f2f2f2; padding: 5px 10px; font-weight: bold; font-size: 10px; border-bottom: 1px solid #000; display: flex; justify-content: space-between; }
+        .print-meta-location { font-size: 8.5px; padding: 4px 10px; border-bottom: 1px solid #000; }
+        .print-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid #000; }
+        .print-col { border-right: 1px solid #000; display: flex; flex-direction: column; align-items: center; padding: 5px 2px; }
+        .print-col:last-child { border-right: none; }
+        .print-img-box { width: 58mm; height: 42mm; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f9f9f9; }
+        .print-img-box img { width: 100%; height: 100%; object-fit: contain; }
+        .print-desc { padding: 8px 10px; font-size: 9.5px; }
+        .print-footer-page { position: absolute; bottom: 10mm; left: 12mm; font-size: 9px; font-style: italic; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -153,7 +59,8 @@
     <div class="filter-card">
         <label style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 5px;">FILTER TANGGAL:</label>
         <input type="date" id="f-date" onchange="updateUI()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; margin-bottom: 10px;">
-        <button class="btn-print-full" id="print-btn" onclick="generatePrintView()" disabled>🖨️ Cetak Terpilih (0)</button>
+        <button class="btn-action btn-print" id="print-btn" onclick="triggerPrint()" disabled>🖨️ Cetak Terpilih (0)</button>
+        <button class="btn-action btn-download" id="wa-btn" onclick="triggerPDF()" disabled>💾 Download File (PDF) (0)</button>
     </div>
     <div id="history-list"></div>
 </div>
@@ -183,95 +90,83 @@
     function updateBtn() {
         const count = document.querySelectorAll('.report-cb:checked').length;
         document.getElementById('print-btn').disabled = count === 0;
+        document.getElementById('wa-btn').disabled = count === 0;
         document.getElementById('print-btn').innerText = `🖨️ Cetak Terpilih (${count})`;
+        document.getElementById('wa-btn').innerText = `💾 Download File (PDF) (${count})`;
     }
 
-    function restoreToEditor(id) {
-        const history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
-        const entry = history.find(h => h.id === id);
-        localStorage.setItem('lapdok_draft', JSON.stringify(entry.data));
-        localStorage.setItem('lapdok_edit_context', id);
-        window.location.href = "index.html";
-    }
-
-    function generatePrintView() {
+    function prepareContent() {
         const selectedIds = Array.from(document.querySelectorAll('.report-cb:checked')).map(cb => parseFloat(cb.value));
         const allHistory = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
         const reports = allHistory.filter(h => selectedIds.includes(h.id));
-
         const target = document.getElementById('print-content-target');
         target.innerHTML = '';
-
+        
         let allItems = [];
         reports.forEach(r => r.data.forEach(d => allItems.push(d)));
         allItems.sort((a, b) => new Date(a.workDate) - new Date(b.workDate));
-
-        if (allItems.length === 0) return;
 
         const itemsPerPage = 3; 
         const totalPages = Math.ceil(allItems.length / itemsPerPage);
         
         for (let i = 0; i < allItems.length; i += itemsPerPage) {
-            const pageNum = Math.floor(i / itemsPerPage) + 1;
-            const chunk = allItems.slice(i, i + itemsPerPage);
-            
             const page = document.createElement('div');
             page.className = 'page-container';
+            const chunk = allItems.slice(i, i + itemsPerPage);
             
             let html = `
                 <div class="print-main-header">
-                    <h1>DOKUMENTASI LAPORAN PEKERJAAN</h1>
-                    <p>Dicetak pada: ${new Date().toLocaleString('id-ID')}</p>
-                </div>
-                <div class="print-items-body">`;
-            
-            html += chunk.map((item, idx) => {
-                const displayDate = new Date(item.workDate).toLocaleDateString('id-ID', {
-                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-                });
-
-                return `
-                <div class="print-job-item">
-                    <div class="print-header">
-                        <span>ITEM #${i + idx + 1}</span>
-                        <span>${displayDate}</span>
-                    </div>
-                    <div class="print-meta-location">
-                        <strong>LOKASI</strong>
-                        <span>: ${item.addr || '-'}</span>
-                    </div>
-                    <div class="print-grid">
-                        <div class="print-col">
-                            <span class="col-title">Sebelum</span>
-                            <div class="print-img-box">
-                                ${item.p1 ? `<img src="${item.p1}">` : '<span class="no-photo">(Tidak ada foto)</span>'}
-                            </div>
-                        </div>
-                        <div class="print-col">
-                            <span class="col-title">Proses</span>
-                            <div class="print-img-box">
-                                ${item.p2 ? `<img src="${item.p2}">` : '<span class="no-photo">(Tidak ada foto)</span>'}
-                            </div>
-                        </div>
-                        <div class="print-col">
-                            <span class="col-title">Sesudah</span>
-                            <div class="print-img-box">
-                                ${item.p3 ? `<img src="${item.p3}">` : '<span class="no-photo">(Tidak ada foto)</span>'}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="print-desc">
-                        <strong>KETERANGAN:</strong> ${(item.desc || '-').replace(/\n/g, '<br>')}
-                    </div>
+                    <h1>DOKUMENTASI LAPORAN KINERJA</h1>
+                    <p>Dicetak: ${new Date().toLocaleDateString('id-ID')}</p>
                 </div>`;
-            }).join('');
             
-            html += `</div><div class="print-footer-page">Halaman ${pageNum} dari ${totalPages}</div>`;
+            chunk.forEach((item, idx) => {
+                html += `
+                <div class="print-job-item">
+                    <div class="print-header"><span>ITEM #${i + idx + 1}</span><span>${item.workDate}</span></div>
+                    <div class="print-meta-location"><strong>LOKASI:</strong> ${item.addr}</div>
+                    <div class="print-grid">
+                        <div class="print-col"><div class="print-img-box">${item.p1 ? `<img src="${item.p1}">` : 'No Photo'}</div></div>
+                        <div class="print-col"><div class="print-img-box">${item.p2 ? `<img src="${item.p2}">` : 'No Photo'}</div></div>
+                        <div class="print-col"><div class="print-img-box">${item.p3 ? `<img src="${item.p3}">` : 'No Photo'}</div></div>
+                    </div>
+                    <div class="print-desc"><strong>KETERANGAN:</strong> ${item.desc}</div>
+                </div>`;
+            });
+            html += `<div class="print-footer-page">Halaman ${Math.floor(i/itemsPerPage) + 1} dari ${totalPages}</div>`;
             page.innerHTML = html;
             target.appendChild(page);
         }
+    }
 
-        setTimeout(() => { window.print(); }, 1000);
+    function triggerPrint() { prepareContent(); setTimeout(window.print, 500); }
+
+    async function triggerPDF() {
+        const defaultName = "Laporan_Kinerja_" + new Date().toISOString().slice(0, 10);
+        let fileName = prompt("Masukkan nama file PDF:", defaultName);
+
+        if (fileName === null) return; 
+        if (!fileName.toLowerCase().endsWith('.pdf')) fileName += '.pdf';
+
+        prepareContent();
+        const element = document.getElementById('print-content-target');
+        const opt = {
+            margin: 0,
+            filename: fileName,
+            image: { type: 'jpeg', quality: 0.8 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        alert("Sedang memproses PDF...");
+        await html2pdf().set(opt).from(element).save();
+    }
+
+    function restoreToEditor(id) {
+        const entry = JSON.parse(localStorage.getItem('lapdok_history')).find(h => h.id === id);
+        localStorage.setItem('lapdok_draft', JSON.stringify(entry.data));
+        localStorage.setItem('lapdok_edit_context', id);
+        window.location.href = "index.html";
     }
 
     function deleteItem(e, id) { 
