@@ -24,6 +24,9 @@
         .navbar a.active { opacity: 1; border-bottom: 2px solid #00d2ff; }
 
         .container { width: 100%; max-width: 900px; margin: auto; padding: 15px; }
+        
+        /* GERBANG AKTIVASI */
+        #activation-gate { text-align:center; padding:20px; background:#fff3cd; border:1px solid #ffeeba; border-radius:8px; margin-bottom:20px; }
 
         #edit-banner { display: none; background: #e67e22; color: white; padding: 12px; border-radius: 6px; margin-bottom: 15px; text-align: center; font-weight: bold; }
 
@@ -65,21 +68,7 @@
         .cam-controls { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-around; align-items: center; }
         .btn-shutter { width: 70px; height: 70px; background: white; border-radius: 50%; border: 5px solid #ccc; }
 
-#btn-mute-toggle {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 99999;
-    background: #e74c3c;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 50px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    font-size: 11px;
-    cursor: pointer;
-    font-weight: bold;
-}
+        #btn-mute-toggle { display: none; position: fixed; bottom: 20px; right: 20px; z-index: 99999; background: #e74c3c; color: white; border: none; padding: 10px 15px; border-radius: 50px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); font-size: 11px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -90,6 +79,11 @@
 </nav>
 
 <div class="container">
+    <div id="activation-gate">
+        <p style="font-size:12px; font-weight:bold; color:#856404;">Aktifkan pemandu suara agar saya bisa memandu Anda!</p>
+        <button onclick="activateAndHide()" style="padding:10px 20px; background:#f39c12; color:white; border:none; border-radius:5px; font-weight:bold;">✅ AKTIFKAN SUARA</button>
+    </div>
+
     <div id="edit-banner">
         ⚠️ MODE EDIT: Perubahan akan menimpa data lama. <br> 
         <button onclick="cancelEdit()" style="margin-top:5px; padding:5px; cursor:pointer;">Batal Edit</button>
@@ -101,6 +95,7 @@
     </div>
 </div>
 
+<!-- (Modal HTML tetap sama seperti sebelumnya...) -->
 <div id="map-modal">
     <div class="modal-content">
         <div style="position: relative;">
@@ -129,10 +124,16 @@
 </div>
 
 <script>
+    function activateAndHide() {
+        Jarvis.activate();
+        document.getElementById('activation-gate').style.display = 'none';
+    }
+
     let itemCount = 0, map, marker, activeInputId, activeAddrId, tempCoords;
     let cameraStream = null, activePreviewId = null, currentStage = null;
     let editContextId = localStorage.getItem('lapdok_edit_context') || null;
 
+    // ... (Fungsi-fungsi logika lainnya tidak berubah)
     function formatIndoDate(dateString) {
         if (!dateString) return "Pilih tanggal...";
         return new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(dateString));
@@ -149,7 +150,6 @@
         itemCount++;
         const container = document.getElementById('job-container');
         const stages = ['sebelum', 'proses', 'sesudah'];
-        
         let html = `
             <div class="job-item" id="item-${itemCount}">
                 <div class="header-main"><span>ITEM #${itemCount}</span><button onclick="this.closest('.job-item').remove(); saveDraft();" style="background:none; border:1px solid white; color:white; font-size:9px;">Hapus</button></div>
@@ -164,7 +164,6 @@
                 </div>
                 <div class="grid-header"><div>SEBELUM</div><div>PROSES</div><div>SESUDAH</div></div>
                 <div class="grid-content">`;
-        
         stages.forEach((s, idx) => {
             html += `
                 <div class="column">
@@ -176,11 +175,9 @@
                     <div class="image-preview" id="p${idx+1}-${itemCount}"><span>Preview</span></div>
                 </div>`;
         });
-        
         html += `</div>
                 <div class="footer-section"><textarea id="ta-${itemCount}" onfocus="Jarvis.pandu('keterangan')" oninput="saveDraft()" placeholder="Keterangan..."></textarea></div>
             </div>`;
-            
         container.insertAdjacentHTML('beforeend', html);
         Jarvis.pandu('tanggal');
     }
@@ -196,10 +193,7 @@
         setTimeout(() => map.invalidateSize(), 400);
     }
 
-    function getCurrentLocation() {
-        if(map) map.locate({setView: true, maxZoom: 18});
-    }
-
+    function getCurrentLocation() { if(map) map.locate({setView: true, maxZoom: 18}); }
     function setMapMarker(lat, lng) {
         tempCoords = `${lat.toFixed(6)},${lng.toFixed(6)}`;
         if (marker) marker.setLatLng([lat, lng]);
