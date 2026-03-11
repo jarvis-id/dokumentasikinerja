@@ -1,13 +1,33 @@
-// jarvis.js (Tambahkan fungsi toggleMute)
+// jarvis.js
 const Jarvis = {
     isInitialized: false,
     isMuted: false, // Status awal: suara menyala
+    isReady: false, // Status untuk memastikan browser mengizinkan audio
 
     say: function(text) {
-        if (this.isMuted) return; 
+        // Jika dimute atau belum diaktivasi user, batalkan suara
+        if (this.isMuted || !this.isReady) return; 
+        
         const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=id&client=tw-ob&q=${encodeURIComponent(text)}`;
         const audio = new Audio(url);
-        audio.play().catch(e => console.log("Audio diblokir"));
+        audio.play().catch(e => console.log("Audio diblokir oleh browser:", e));
+    },
+
+    // Fungsi untuk mengaktifkan sistem suara secara resmi setelah klik tombol
+    activate: function() {
+        this.isReady = true;
+        this.isMuted = false;
+        
+        // Sapaan awal setelah tombol aktivasi diklik
+        this.say("Halo tuan, silahkan isi form berikut.");
+        
+        // Tampilkan tombol mute jika ada
+        const btn = document.getElementById('btn-mute-toggle');
+        if (btn) {
+            btn.style.display = 'block';
+            btn.innerHTML = "🔇 Matikan Suara";
+            btn.style.background = "#e74c3c";
+        }
     },
 
     // Fungsi Toggle ON/OFF
@@ -21,15 +41,9 @@ const Jarvis = {
         return this.isMuted;
     },
 
+    // Inisialisasi awal (tanpa trigger otomatis yang menyebabkan gema)
     init: function() {
-        if (this.isInitialized) return;
-        const triggerSapaan = () => {
-            if (this.isInitialized) return;
-            this.say("Halo tuan, silahkan isi form berikut. Setelah anda mengisinya saya akan lanjut memandu kembali di form berikutnya.");
-            this.isInitialized = true;
-            document.removeEventListener('click', triggerSapaan);
-        };
-        document.addEventListener('click', triggerSapaan);
+        this.isInitialized = true;
     },
 
     pandu: function(tahap) {
@@ -39,10 +53,12 @@ const Jarvis = {
             'foto_sebelum': "Upload foto sebelum.",
             'foto_proses': "Upload foto proses.",
             'foto_sesudah': "Upload foto sesudah.",
-            'keterangan': "Masukkan detail keterangan pekerjaan di kolom yang tersedia.",
+            'keterangan': "Masukkan detail pekerjaan.",
             'selesai': "Silahkan simpan ke riwayat.",
         };
         if (pesan[tahap]) this.say(pesan[tahap]);
     }
 };
+
+// Inisialisasi sistem
 Jarvis.init();
