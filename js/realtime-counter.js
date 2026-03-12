@@ -6,13 +6,13 @@
 // CONFIGURATION REQUIRED:
 // Silakan buat proyek di console.firebase.google.com dan tempelkan config Anda di sini.
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-    projectId: "YOUR_PROJECT",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyCN2lKmavq6eIW7GDiTzfupd70Y0TF1vm8",
+    authDomain: "lapdok-live.firebaseapp.com",
+    databaseURL: "https://lapdok-live-default-rtdb.firebaseio.com",
+    projectId: "lapdok-live",
+    storageBucket: "lapdok-live.firebasestorage.app",
+    messagingSenderId: "813384988119",
+    appId: "1:813384988119:web:48ac10346d6920a7e78792"
 };
 
 // --- LOGIKA PRESENCE ---
