@@ -165,7 +165,7 @@ function openMap(g, a) {
         });
         map.on('click', (e) => setMapMarker(e.latlng.lat, e.latlng.lng));
     }
-    setTimeout(() => map.invalidateSize(), 150);
+    setTimeout(() => map.invalidateSize(), 300);
 }
 
 function getCurrentLocation() { if(map) map.locate({setView: true, maxZoom: 18, enableHighAccuracy: true, maximumAge: 10000, timeout: 5000}); }
