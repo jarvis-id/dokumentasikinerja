@@ -5,15 +5,36 @@ function updateUI() {
     data.sort((a,b) => b.id - a.id);
 
     const listDiv = document.getElementById('history-list');
-    listDiv.innerHTML = data.map(h => `
+    listDiv.innerHTML = data.map(h => {
+        const firstItem = h.data[0] || {};
+        const thumb = firstItem.p3 || firstItem.p2 || firstItem.p1 || null;
+        
+        // Generate brief preview of items
+        const itemsList = h.data.map((item, idx) => `
+            <div class="preview-item-row">
+                <strong>#${idx + 1}</strong>: ${item.desc || 'Tanpa keterangan'}
+            </div>
+        `).join('');
+
+        return `
         <div class="report-card-wrapper">
-            <input type="checkbox" class="report-cb" value="${h.id}" onchange="updateBtn()" style="width:22px; height:22px;">
+            <input type="checkbox" class="report-cb" value="${h.id}" onchange="updateBtn()" style="width:22px; height:22px; flex-shrink: 0;">
             <div class="report-card-preview" onclick="restoreToEditor(${h.id})">
                 <button class="btn-del" onclick="deleteItem(event, ${h.id})">Hapus</button>
-                <div style="font-weight:bold; font-size:14px; color:#2c3e50;">📅 ${h.timestamp}</div>
-                <div style="font-size:11px; color:#7f8c8d;">📦 ${h.data.length} Item Pekerjaan</div>
+                <div class="report-card-content">
+                    <div class="report-thumb">
+                        ${thumb ? `<img src="${thumb}">` : `<div class="no-thumb">🖼️</div>`}
+                    </div>
+                    <div class="report-details">
+                        <div class="report-title">📅 ${h.timestamp}</div>
+                        <div class="report-items-preview">
+                            ${itemsList}
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
     updateBtn();
 }
 
