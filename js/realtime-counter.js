@@ -112,9 +112,12 @@ async function getAccurateLocation() {
             async (pos) => {
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
-                const ipData = await getIpFallbackLocation();
+                
+                // Sinkronisasi Alamat: Ambil nama lokasi asli berdasarkan Koordinat (Reverse Geocoding)
+                const realAddress = await getReverseGeocoding(lat, lon);
+                
                 resolve({
-                    text: `${ipData.text} (GPS Terkunci)`,
+                    text: `${realAddress} (LOKASI GPS)`,
                     lat: lat,
                     lon: lon,
                     source: "GPS"
@@ -127,6 +130,26 @@ async function getAccurateLocation() {
             options
         );
     });
+}
+
+// Fungsi untuk mengubah Koordinat menjadi Alamat Nyata (Nominatim OpenStreetMap)
+async function getReverseGeocoding(lat, lon) {
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, {
+            headers: { 'Accept-Language': 'id' } // Paksa bahasa Indonesia
+        });
+        const data = await response.json();
+        
+        // Pilih informasi yang paling relevan (Desa/Kelurahan, Kota, atau Jalan)
+        const addr = data.address;
+        const locationName = addr.village || addr.suburb || addr.city_district || addr.city || addr.town || "Lokasi Spesifik";
+        const city = addr.city || addr.regency || addr.state || "";
+        
+        return `${locationName}, ${city}`;
+    } catch (e) {
+        console.error("Reverse Geocoding Error:", e);
+        return "Alamat Terkunci";
+    }
 }
 
 // Fungsi Cadangan jika GPS Gagal
