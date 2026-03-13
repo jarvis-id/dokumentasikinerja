@@ -72,44 +72,58 @@ async function loadPreview() {
     reports.forEach(r => r.data.forEach(d => allItems.push(d)));
     allItems.sort((a, b) => new Date(a.workDate) - new Date(b.workDate));
 
-    const itemsPerPage = 3; 
-    const totalPages = Math.ceil(allItems.length / itemsPerPage);
+    // Create ONE main container for continuous view
+    const container = document.createElement('div');
+    container.className = 'page-container';
     
-    for (let i = 0; i < allItems.length; i += itemsPerPage) {
-        const page = document.createElement('div');
-        page.className = 'page-container';
-        const chunk = allItems.slice(i, i + itemsPerPage);
-        
-        let html = `
-            <div class="print-main-header">
-                <h1>DOKUMENTASI LAPORAN KINERJA</h1>
-            </div>`;
-        
-        chunk.forEach((item, idx) => {
-            html += `
-            <div class="print-job-item">
-                <div class="print-meta-location"><strong>LOKASI:</strong> ${item.addr}</div>
-                <div class="print-grid">
-                    <div class="print-col">
-                        <div class="print-lbl">SEBELUM</div>
-                        <div class="print-img-box">${item.p1 ? `<img src="${item.p1}">` : 'No Photo'}</div>
-                    </div>
-                    <div class="print-col">
-                        <div class="print-lbl">PROSES</div>
-                        <div class="print-img-box">${item.p2 ? `<img src="${item.p2}">` : 'No Photo'}</div>
-                    </div>
-                    <div class="print-col">
-                        <div class="print-lbl">SESUDAH</div>
-                        <div class="print-img-box">${item.p3 ? `<img src="${item.p3}">` : 'No Photo'}</div>
-                    </div>
+    let html = `
+        <div class="print-main-header">
+            <h1>DOKUMENTASI LAPORAN KINERJA</h1>
+        </div>`;
+
+    const itemsPerPage = 3;
+    const totalPages = Math.ceil(allItems.length / itemsPerPage);
+
+    allItems.forEach((item, idx) => {
+        // Build the job item
+        html += `
+        <div class="print-job-item">
+            <div class="print-meta-location"><strong>LOKASI:</strong> ${item.addr}</div>
+            <div class="print-grid">
+                <div class="print-col">
+                    <div class="print-lbl">SEBELUM</div>
+                    <div class="print-img-box">${item.p1 ? `<img src="${item.p1}">` : 'No Photo'}</div>
                 </div>
-                <div class="print-desc"><strong>KETERANGAN:</strong> ${item.desc}</div>
-            </div>`;
-        });
-        html += `<div class="print-footer-page">Halaman ${Math.floor(i/itemsPerPage) + 1} dari ${totalPages}</div>`;
-        page.innerHTML = html;
-        target.appendChild(page);
-    }
+                <div class="print-col">
+                    <div class="print-lbl">PROSES</div>
+                    <div class="print-img-box">${item.p2 ? `<img src="${item.p2}">` : 'No Photo'}</div>
+                </div>
+                <div class="print-col">
+                    <div class="print-lbl">SESUDAH</div>
+                    <div class="print-img-box">${item.p3 ? `<img src="${item.p3}">` : 'No Photo'}</div>
+                </div>
+            </div>
+            <div class="print-desc"><strong>KETERANGAN:</strong> ${item.desc}</div>
+        </div>`;
+
+        // At exactly every 3rd item, add a footer AND a page break marker (only for PDF)
+        const currentItemNum = idx + 1;
+        if (currentItemNum % itemsPerPage === 0 && currentItemNum < allItems.length) {
+            const pageNum = currentItemNum / itemsPerPage;
+            html += `
+                <div class="print-footer-page">Halaman ${pageNum} dari ${totalPages}</div>
+                <div class="page-break-trigger"></div>
+                <div class="print-main-header screen-only" style="margin-top: 40px; border-top: 1px dashed #ccc; padding-top: 20px;">
+                    <h1>DOKUMENTASI LAPORAN KINERJA (Sambungan)</h1>
+                </div>`;
+        }
+    });
+
+    // Final footer for the last page
+    html += `<div class="print-footer-page">Halaman ${totalPages} dari ${totalPages}</div>`;
+
+    container.innerHTML = html;
+    target.appendChild(container);
 }
 
 async function downloadPDF() {
