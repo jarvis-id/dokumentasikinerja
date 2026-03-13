@@ -95,39 +95,93 @@ async function initCounter() {
 }
 
 function updateCounterUI(count, devices = []) {
-    const countEl = document.getElementById('active-devices');
+    let countEl = document.getElementById('active-devices');
+    
+    // Jika elemen tidak ada, buat widget secara dinamis
+    if (!countEl) {
+        injectCounterWidget();
+        countEl = document.getElementById('active-devices');
+    }
+
     if (countEl) {
         countEl.innerText = count;
-        countEl.style.transform = "scale(1.2)";
+        countEl.style.transform = "scale(1.3)";
         setTimeout(() => countEl.style.transform = "scale(1)", 300);
     }
 
     // Update Daftar Detail
     let listEl = document.getElementById('device-list');
-    if (!listEl) {
-        // Buat elemen list jika belum ada
-        const container = document.querySelector('.card') || document.body;
+    if (!listEl && countEl) {
+        // Jika list belum ada tapi counter ada (seperti di Home), sisipkan list di bawah parent counter
         listEl = document.createElement('div');
         listEl.id = 'device-list';
-        listEl.style.marginTop = "20px";
-        listEl.style.fontSize = "0.85em";
-        listEl.style.textAlign = "left";
         listEl.style.borderTop = "1px solid #eee";
+        listEl.style.marginTop = "10px";
         listEl.style.paddingTop = "10px";
-        container.appendChild(listEl);
+        
+        // Cari parent terdekat yang cocok (seperti live-card di Home atau dynamic widget)
+        const parent = countEl.closest('.live-card') || countEl.parentElement.parentElement;
+        parent.appendChild(listEl);
     }
 
-    if (devices.length > 0) {
-        listEl.innerHTML = `<strong>Rincian Perangkat:</strong><ul style="list-style:none; padding:0; margin:5px 0 0 0;">` +
-            devices.map(d => `
-                <li style="margin-bottom:5px; padding:5px; background:#f9f9f9; border-radius:4px;">
-                    <span style="color:#2ecc71;">●</span> 
-                    <strong>${d.device}</strong> (${d.browser}) 
-                    <br><span style="color:#7f8c8d; font-size:0.9em; margin-left:15px;">📍 ${d.location || 'Unknown'}</span>
-                </li>
-            `).join('') + `</ul>`;
+    if (listEl) {
+        if (devices.length > 0) {
+            listEl.innerHTML = `<strong>Rincian Perangkat:</strong><ul style="list-style:none; padding:0; margin:8px 0 0 0;">` +
+                devices.map(d => `
+                    <li style="margin-bottom:8px; padding:8px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:12px; border:1px solid rgba(0,0,0,0.05);">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong>${d.device}</strong>
+                            <span style="font-size:10px; background:#3498db; color:white; padding:2px 6px; border-radius:10px;">${d.browser}</span>
+                        </div>
+                        <div style="color:#7f8c8d; margin-top:3px;">📍 ${d.location || 'Unknown'}</div>
+                    </li>
+                `).join('') + `</ul>`;
+            listEl.style.display = "block";
+        } else {
+            listEl.style.display = "none";
+        }
+    }
+}
+
+function injectCounterWidget() {
+    const widgetHTML = `
+        <div id="dynamic-live-counter" style="
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px auto;
+            max-width: 450px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-family: sans-serif;
+            border: 1px solid #eee;
+            position: relative;
+            z-index: 9999;
+        ">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:10px; height:10px; background:#2ecc71; border-radius:50%; box-shadow:0 0 5px #2ecc71;"></div>
+                    <span style="font-size:10px; font-weight:bold; color:#7f8c8d; text-transform:uppercase; letter-spacing:1px;">Aktivitas Real-time</span>
+                </div>
+                <div>
+                    <span id="active-devices" style="font-size:20px; font-weight:bold; color:#2c3e50;">1</span>
+                    <span style="font-size:12px; color:#95a5a6; margin-left:5px;">Aktif</span>
+                </div>
+            </div>
+            <div id="device-list" style="border-top:1px solid #eee; paddingTop:10px; display:none;"></div>
+        </div>
+    `;
+
+    // Cari lokasi terbaik untuk menyisipkan widget
+    const mainContent = document.querySelector('.main-content') || document.querySelector('.container') || document.body;
+    
+    // Sisipkan di bagian atas main content
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = widgetHTML;
+    
+    if (mainContent.firstChild) {
+        mainContent.insertBefore(wrapper.firstElementChild, mainContent.firstChild);
     } else {
-        listEl.innerHTML = "";
+        mainContent.appendChild(wrapper.firstElementChild);
     }
 }
 
