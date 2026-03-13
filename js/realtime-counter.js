@@ -52,14 +52,17 @@ async function initCounter() {
         // Pantau perubahan jumlah perangkat
         onValue(activeRef, (snapshot) => {
             const count = snapshot.size || 0;
+            console.log("Firebase Presence Update: Terdeteksi", count, "perangkat.");
             updateCounterUI(count);
         });
 
+        console.log("Firebase Real-time Counter berhasil terhubung!");
+
     } catch (error) {
-        console.error("DIAGNOSIS FIREBASE:", error.message);
+        console.error("DIAGNOSIS FIREBASE ERROR:", error);
         if (error.message.includes("403")) {
             console.warn("⚠️ ERROR 403: Ini adalah masalah 'Website Restriction' di Google Cloud Console. Silakan tambahkan 'jarvis-id.github.io/*' ke daftar putih.");
-        } else if (error.message.includes("databaseURL")) {
+        } else if (error.message.includes("databaseURL") || error.message.includes("Invalid database URL")) {
             console.warn("⚠️ ERROR URL: Jika Anda memilih region Singapore, ganti databaseURL menjadi: https://lapdok-live-default-rtdb.asia-southeast1.firebasedatabase.app/");
         }
         simulateLiveCounter();
