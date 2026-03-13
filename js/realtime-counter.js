@@ -109,10 +109,12 @@ async function getLocation() {
 }
 
 async function initCounter() {
-    // PEMBATASAN: Hanya jalan di halaman Home
-    const isHome = location.pathname === "/" || location.pathname.endsWith("index.html") || location.pathname.endsWith("/");
-    if (!isHome) {
-        console.log("Counter dinonaktifkan di halaman ini (Bukan Home).");
+    // PEMBATASAN: Hanya jalan di halaman Home (diidentifikasi dari adanya .live-card atau path)
+    const hasLiveCard = document.querySelector('.live-card');
+    const isHomePath = location.pathname === "/" || location.pathname.endsWith("index.html") || location.pathname.endsWith("/");
+    
+    if (!hasLiveCard && !isHomePath) {
+        console.log("Counter dinonaktifkan di halaman ini.");
         return;
     }
 
@@ -178,10 +180,7 @@ function updateCounterUI(count, devices = []) {
     if (!listEl && countEl) {
         listEl = document.createElement('div');
         listEl.id = 'device-list';
-        listEl.style.borderTop = "1px solid rgba(0,0,0,0.1)";
-        listEl.style.marginTop = "10px";
-        listEl.style.paddingTop = "10px";
-        listEl.style.width = "100%";
+        listEl.style.cssText = "border-top: 1px solid rgba(0,0,0,0.1); margin-top: 10px; padding-top: 10px; width: 100%; position: relative; z-index: 10;";
         
         const parent = countEl.closest('.live-card') || countEl.parentElement.parentElement;
         parent.style.flexWrap = "wrap"; 
@@ -189,14 +188,14 @@ function updateCounterUI(count, devices = []) {
     }
 
     if (listEl) {
-        window._activeDevices = devices; // Simpan ke global agar aman saat diklik
+        window._activeDevices = devices; 
         if (devices.length > 0) {
             listEl.innerHTML = `<strong>Rincian Perangkat (Klik untuk Peta):</strong><ul style="list-style:none; padding:0; margin:10px 0 0 0;">` +
                 devices.map((d, index) => `
-                    <li onclick='openMapModalByIndex(${index})' 
-                        style="margin-bottom:8px; padding:10px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:11px; border:1px solid rgba(0,0,0,0.05); color: #2c3e50; cursor:pointer; transition:all 0.2s;"
-                        onmouseover="this.style.background='rgba(52,152,219,0.1)'; this.style.borderColor='#3498db';"
-                        onmouseout="this.style.background='rgba(0,0,0,0.03)'; this.style.borderColor='rgba(0,0,0,0.05)';"
+                    <li onclick='window.openMapModalByIndex(${index})' 
+                        style="margin-bottom:8px; padding:10px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:11px; border:1px solid rgba(0,0,0,0.05); color: #2c3e50; cursor:pointer; transition:all 0.2s; position:relative; z-index:20;"
+                        onmouseover="this.style.background='rgba(52,152,219,0.1)'; this.style.borderColor='#3498db'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)';"
+                        onmouseout="this.style.background='rgba(0,0,0,0.03)'; this.style.borderColor='rgba(0,0,0,0.05)'; this.style.boxShadow='none';"
                     >
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <strong>${d.brand || ''} ${d.model || d.device || 'Perangkat Online'}</strong>
@@ -212,9 +211,9 @@ function updateCounterUI(count, devices = []) {
     }
 }
 
-// Fitur Peta Modal
+// Fitur Peta Modal (Lampirkan ke Window)
 let mapInstance = null;
-function openMapModalByIndex(index) {
+window.openMapModalByIndex = function(index) {
     const device = window._activeDevices[index];
     if (!device || !device.lat || !device.lon) {
         alert("Koordinat lokasi tidak tersedia untuk perangkat ini.");
@@ -227,11 +226,11 @@ function openMapModalByIndex(index) {
         modal = document.createElement('div');
         modal.id = 'traffic-map-modal';
         modal.innerHTML = `
-            <div class="modal-bg" onclick="closeTrafficMap()"></div>
+            <div class="modal-bg" onclick="window.closeTrafficMap()"></div>
             <div class="modal-content">
                 <div class="modal-header">
                     <span id="map-device-name">Detail Lokasi</span>
-                    <button onclick="closeTrafficMap()">✕</button>
+                    <button onclick="window.closeTrafficMap()">✕</button>
                 </div>
                 <div id="traffic-map-container" style="height: 300px; background: #eee;"></div>
                 <div class="modal-footer" id="map-device-info"></div>
@@ -244,7 +243,6 @@ function openMapModalByIndex(index) {
     document.getElementById('map-device-info').innerText = `🌍 ${device.location} | 🔍 ${device.lat}, ${device.lon}`;
     modal.style.display = 'flex';
 
-    // Load Leaflet jika belum ada
     if (typeof L === 'undefined') {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
@@ -258,23 +256,25 @@ function openMapModalByIndex(index) {
     } else {
         initLeafletMap(device.lat, device.lon);
     }
-}
+};
+
+window.closeTrafficMap = function() {
+    const modal = document.getElementById('traffic-map-modal');
+    if (modal) modal.style.display = 'none';
+};
 
 function initLeafletMap(lat, lon) {
     if (mapInstance) mapInstance.remove();
-    
-    mapInstance = L.map('traffic-map-container').setView([lat, lon], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(mapInstance);
-    
-    L.marker([lat, lon]).addTo(mapInstance)
-        .bindPopup('Posisi Pengunjung')
-        .openPopup();
-}
-
-function closeTrafficMap() {
-    document.getElementById('traffic-map-modal').style.display = 'none';
+    setTimeout(() => {
+        mapInstance = L.map('traffic-map-container').setView([lat, lon], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(mapInstance);
+        
+        L.marker([lat, lon]).addTo(mapInstance)
+            .bindPopup('Posisi Pengunjung')
+            .openPopup();
+    }, 100);
 }
 
 function injectMapStyles() {
@@ -284,13 +284,14 @@ function injectMapStyles() {
     style.innerHTML = `
         #traffic-map-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            display: none; align-items: center; justify-content: center; z-index: 1000000;
+            display: none; align-items: center; justify-content: center; z-index: 9999999;
         }
         .modal-bg { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
         .modal-content {
             position: relative; width: 90%; max-width: 500px; background: white;
-            border-radius: 12px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000;
         }
         .modal-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .modal-header span { font-weight: bold; font-size: 14px; color: #2c3e50; }
@@ -304,14 +305,9 @@ function injectMapStyles() {
 function injectCounterWidget() {
     const widgetHTML = `
         <div id="dynamic-live-counter" style="
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            margin: 20px auto;
-            max-width: 450px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            font-family: sans-serif;
-            border: 1px solid #eee;
+            background: white; border-radius: 12px; padding: 15px; margin: 20px auto;
+            max-width: 450px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-family: sans-serif; border: 1px solid #eee;
         ">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <div style="display:flex; align-items:center; gap:10px;">
@@ -323,7 +319,7 @@ function injectCounterWidget() {
                     <span style="font-size:12px; color:#95a5a6; margin-left:5px;">Online</span>
                 </div>
             </div>
-            <div id="device-list" style="border-top:1px solid #eee; paddingTop:10px; display:none;"></div>
+            <div id="device-list" style="border-top:1px solid #eee; padding-top:10px; display:none;"></div>
         </div>
     `;
 
