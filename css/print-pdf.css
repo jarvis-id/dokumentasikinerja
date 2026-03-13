@@ -100,31 +100,35 @@ body {
 
 .page-container { 
     width: 210mm; 
-    height: auto; /* Hilangkan min-height untuk mencegah halaman kosong berlebih */
+    height: 297mm; /* Kunci tinggi tepat A4 */
     padding: 10mm 15mm; 
     background: white; 
     page-break-inside: avoid; 
     position: relative; 
     margin: 0 auto;
-    box-shadow: none; /* Hapus shadow agar bersih saat di-capture */
+    overflow: hidden; /* Mencegah konten meluber yang memicu halaman kosong */
+    box-sizing: border-box;
 }
 .page-container:not(:last-child) { page-break-after: always; }
-.print-main-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 5mm; padding-bottom: 3mm; margin-top: 0; }
-.print-job-item { border: 1px solid #000; margin-bottom: 5mm; page-break-inside: avoid; background: #fff; }
+.print-main-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 5mm; padding-bottom: 2mm; margin-top: 0; }
+.print-job-item { border: 1px solid #000; margin-bottom: 4mm; page-break-inside: avoid; background: #fff; }
 .print-meta-location { font-size: 8.5px; padding: 4px 10px; border-bottom: 1px solid #000; word-break: break-word; }
 .print-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid #000; width: 100%; }
-.print-col { border-right: 1px solid #000; display: flex; flex-direction: column; align-items: center; padding: 2px; }
+.print-col { border-right: 1px solid #000; display: flex; flex-direction: column; align-items: center; padding: 0; }
 .print-col:last-child { border-right: none; }
 .print-lbl { width: 100%; background: #eaeaea; text-align: center; font-size: 8px; font-weight: bold; padding: 3px 0; border-bottom: 1px solid #000; letter-spacing: 0.5px; }
-.print-img-box { width: 100%; height: 60mm; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fff; padding: 2px; }
+.print-img-box { width: 100%; height: 50mm; /* Kecilkan dari 60mm agar 3 item muat di A4 */
+    display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fff; padding: 2px; }
 .print-img-box img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
 .print-desc { 
-    padding: 8px 10px; 
-    font-size: 9.5px; 
+    padding: 6px 10px; 
+    font-size: 9px; 
     word-break: break-word; 
     white-space: pre-wrap; 
+    max-height: 25mm; 
+    overflow: hidden;
 }
-.print-footer-page { position: absolute; bottom: 8mm; right: 12mm; font-size: 9px; font-style: italic; font-weight: bold; }
+.print-footer-page { position: absolute; bottom: 10mm; right: 15mm; font-size: 9px; font-style: italic; font-weight: bold; }
 
 /* RESPONSIVE ADJUSTMENTS (Retained) */
 @media (max-width: 600px) {
