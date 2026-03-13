@@ -3,10 +3,12 @@
  * Fitur ini memantau perangkat yang sedang aktif secara real-time.
  */
 
-// CONFIGURATION REQUIRED:
-// Silakan buat proyek di console.firebase.google.com dan tempelkan config Anda di sini.
+// CONFIGURATION:
+// Step 1: Login to console.firebase.google.com
+// Step 2: Regenerate your API key if it was leaked.
+// Step 3: RESTRICT your API key to your domain (jarvis-id.github.io/*) in Google Cloud Console.
 const firebaseConfig = {
-    apiKey: "AIzaSyCN2lKmavq6eIW7GDiTzfupd70Y0TF1vm8",
+    apiKey: "AIzaSyCh9Rsoy_mLyKUqIZaQXcxow3Q79dv00ZE", // Kunci baru yang aman dan terbatas
     authDomain: "lapdok-live.firebaseapp.com",
     databaseURL: "https://lapdok-live-default-rtdb.firebaseio.com",
     projectId: "lapdok-live",
@@ -54,7 +56,12 @@ async function initCounter() {
         });
 
     } catch (error) {
-        console.error("Gagal memuat sistem real-time:", error);
+        console.error("DIAGNOSIS FIREBASE:", error.message);
+        if (error.message.includes("403")) {
+            console.warn("⚠️ ERROR 403: Ini adalah masalah 'Website Restriction' di Google Cloud Console. Silakan tambahkan 'jarvis-id.github.io/*' ke daftar putih.");
+        } else if (error.message.includes("databaseURL")) {
+            console.warn("⚠️ ERROR URL: Jika Anda memilih region Singapore, ganti databaseURL menjadi: https://lapdok-live-default-rtdb.asia-southeast1.firebasedatabase.app/");
+        }
         simulateLiveCounter();
     }
 }
