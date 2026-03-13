@@ -118,9 +118,11 @@ function updateCounterUI(count, devices = []) {
         listEl.style.borderTop = "1px solid #eee";
         listEl.style.marginTop = "10px";
         listEl.style.paddingTop = "10px";
+        listEl.style.width = "100%"; // Pastikan memenuhi lebar agar turun ke bawah
         
         // Cari parent terdekat yang cocok (seperti live-card di Home atau dynamic widget)
         const parent = countEl.closest('.live-card') || countEl.parentElement.parentElement;
+        parent.style.flexWrap = "wrap"; // Izinkan membungkus ke baris baru
         parent.appendChild(listEl);
     }
 
