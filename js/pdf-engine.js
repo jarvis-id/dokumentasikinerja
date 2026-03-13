@@ -137,12 +137,12 @@ async function triggerPDF() {
     prepareContent();
     const element = document.getElementById('print-content-target');
     
-    // Paksa lebar elemen 210mm (A4 standar) agar snapshot 1:1 terhadap kanvas CSS
+    // Paksa lebar elemen 210mm (A4 standar) agar snapshot 1:1
     const originalWidth = element.style.width;
     element.style.width = "794px"; 
     
     const opt = {
-        margin: [0, 0, 0, 0], // Mutlak 0 agar CSS memegang kendali penuh atas halaman
+        margin: [0, 0, 0, 0], // Margin Sistem Nol untuk kontrol penuh CSS
         filename: fileName,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
