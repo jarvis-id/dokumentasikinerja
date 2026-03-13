@@ -142,7 +142,7 @@ async function triggerPDF() {
     element.style.width = "794px"; 
     
     const opt = {
-        margin: [5, 5, 5, 5], // Margin diperkecil sedikit agar tidak memicu halaman kosong
+        margin: [0, 0, 0, 0], // Margin Nol agar instruksi A4 297mm di CSS tidak terganggu
         filename: fileName,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
