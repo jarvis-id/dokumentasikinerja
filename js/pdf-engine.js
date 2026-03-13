@@ -85,7 +85,7 @@ function prepareContent() {
     reports.forEach(r => r.data.forEach(d => allItems.push(d)));
     allItems.sort((a, b) => new Date(a.workDate) - new Date(b.workDate));
 
-    const itemsPerPage = 3; 
+    const itemsPerPage = 3; // Kunci: 3 item per halaman
     const totalPages = Math.ceil(allItems.length / itemsPerPage);
     
     for (let i = 0; i < allItems.length; i += itemsPerPage) {
@@ -93,14 +93,10 @@ function prepareContent() {
         page.className = 'page-container';
         const chunk = allItems.slice(i, i + itemsPerPage);
         
-        let html = '';
-        // Header utama hanya di halaman pertama
-        if (i === 0) {
-            html += `
-                <div class="print-main-header">
-                    <h1>DOKUMENTASI LAPORAN KINERJA</h1>
-                </div>`;
-        }
+        let html = `
+            <div class="print-main-header">
+                <h1>DOKUMENTASI LAPORAN KINERJA</h1>
+            </div>`;
         
         chunk.forEach((item, idx) => {
             html += `
@@ -129,14 +125,7 @@ function prepareContent() {
     }
 }
 
-function triggerPrint() { 
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) {
-        alert("PENTING: Fitur cetak browser di HP seringkali terpotong atau tidak muncul.\n\nDisarankan menggunakan tombol 'Download File (PDF)' di bawahnya agar hasil lebih rapi dan bisa disimpan.");
-    }
-    prepareContent(); 
-    setTimeout(window.print, 500); 
-}
+function triggerPrint() { prepareContent(); setTimeout(window.print, 500); }
 
 async function triggerPDF() {
     const defaultName = "Laporan_Kinerja_" + new Date().toISOString().slice(0, 10);
@@ -147,29 +136,17 @@ async function triggerPDF() {
 
     prepareContent();
     const element = document.getElementById('print-content-target');
-    
-    // Paksa lebar elemen agar stabil saat di-render html2canvas (mencegah potong samping)
-    element.style.width = "794px"; // Lebar standar A4 di 96dpi
-    
     const opt = {
-        margin: [10, 5, 10, 5], // Atas, Kiri, Bawah, Kanan (dalam mm)
+        margin: [0, 0, -1, 0], 
         filename: fileName,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 2, 
-            useCORS: true, 
-            letterRendering: true,
-            windowWidth: 800 // Kunci viewport agar tidak mengikuti layar HP yang sempit
-        },
+        image: { type: 'jpeg', quality: 0.8 },
+        html2canvas: { scale: 2, windowWidth: 1024, scrollY: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
     };
 
-    Jarvis.say("Memproses dokumen.");
-    await html2pdf().set(opt).from(element).toPdf().get('pdf').then(function (pdf) {
-        // Setelah selesai, kembalikan gaya elemen jika perlu
-        element.style.width = "";
-    }).save();
+    Jarvis.pandu('memproses_pdf');
+    await html2pdf().set(opt).from(element).save();
 }
 
 function restoreToEditor(id) {
