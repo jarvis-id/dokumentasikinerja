@@ -137,14 +137,17 @@ async function triggerPDF() {
     prepareContent();
     const element = document.getElementById('print-content-target');
     
-    // Opsi PDF yang diselaraskan agar mirip dengan Print asli
+    // Paksa lebar elemen agar snapshot identik dengan lebar A4 (~210mm di 96dpi)
+    const originalWidth = element.style.width;
+    element.style.width = "794px"; 
+    
     const opt = {
-        margin: [10, 10, 10, 10], // Margin standar kertas (mm)
+        margin: [5, 5, 5, 5], // Margin diperkecil sedikit agar tidak memicu halaman kosong
         filename: fileName,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
             scale: 2, 
-            windowWidth: 800, // Menyesuaikan dengan lebar A4 (~210mm)
+            windowWidth: 800, 
             scrollY: 0,
             useCORS: true,
             letterRendering: true
@@ -154,7 +157,13 @@ async function triggerPDF() {
     };
 
     Jarvis.pandu('memproses_pdf');
-    await html2pdf().set(opt).from(element).save();
+    
+    try {
+        await html2pdf().set(opt).from(element).save();
+    } finally {
+        // Kembalikan lebar asli setelah selesai
+        element.style.width = originalWidth;
+    }
 }
 
 function restoreToEditor(id) {
