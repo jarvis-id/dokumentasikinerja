@@ -10,7 +10,7 @@
 const firebaseConfig = {
     apiKey: "AIzaSyCh9Rsoy_mLyKUqIZaQXcxow3Q79dv00ZE", // Kunci baru yang aman dan terbatas
     authDomain: "lapdok-live.firebaseapp.com",
-    databaseURL: "https://lapdok-live-default-rtdb.firebaseio.com",
+    databaseURL: "https://lapdok-live-default-rtdb.asia-southeast1.firebasedatabase.app/",
     projectId: "lapdok-live",
     storageBucket: "lapdok-live.firebasestorage.app",
     messagingSenderId: "813384988119",
