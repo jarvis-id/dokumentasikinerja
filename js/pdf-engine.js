@@ -93,10 +93,14 @@ function prepareContent() {
         page.className = 'page-container';
         const chunk = allItems.slice(i, i + itemsPerPage);
         
-        let html = `
-            <div class="print-main-header">
-                <h1>DOKUMENTASI LAPORAN KINERJA</h1>
-            </div>`;
+        let html = '';
+        // Header utama hanya di halaman pertama
+        if (i === 0) {
+            html += `
+                <div class="print-main-header">
+                    <h1>DOKUMENTASI LAPORAN KINERJA</h1>
+                </div>`;
+        }
         
         chunk.forEach((item, idx) => {
             html += `
@@ -125,7 +129,14 @@ function prepareContent() {
     }
 }
 
-function triggerPrint() { prepareContent(); setTimeout(window.print, 500); }
+function triggerPrint() { 
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+        alert("PENTING: Fitur cetak browser di HP seringkali terpotong atau tidak muncul.\n\nDisarankan menggunakan tombol 'Download File (PDF)' di bawahnya agar hasil lebih rapi dan bisa disimpan.");
+    }
+    prepareContent(); 
+    setTimeout(window.print, 500); 
+}
 
 async function triggerPDF() {
     const defaultName = "Laporan_Kinerja_" + new Date().toISOString().slice(0, 10);
@@ -164,14 +175,3 @@ function deleteItem(e, id) {
         localStorage.setItem('lapdok_history', JSON.stringify(h.filter(x=>x.id!==id))); 
         updateUI(); 
         Jarvis.pandu('hapus');
-    } 
-}
-
-window.onload = () => {
-    updateUI();
-    setTimeout(() => {
-        if (document.querySelectorAll('.report-cb').length > 0) {
-            Jarvis.pandu('pilih_cetak');
-        }
-    }, 500);
-};
