@@ -104,7 +104,7 @@ async function getAccurateLocation() {
 
         const options = {
             enableHighAccuracy: true,
-            timeout: 5000,
+            timeout: 10000, // Tambah waktu ke 10 detik agar Desktop lebih stabil mengunci lokasi via Wi-Fi
             maximumAge: 0
         };
 
@@ -112,7 +112,6 @@ async function getAccurateLocation() {
             async (pos) => {
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
-                // Coba ambil nama kota berdasarkan koordinat (Reverse Geocoding ringan via IPAPI atau ganti teks)
                 const ipData = await getIpFallbackLocation();
                 resolve({
                     text: `${ipData.text} (GPS Terkunci)`,
@@ -147,15 +146,7 @@ async function getIpFallbackLocation() {
 }
 
 async function initCounter() {
-    // PEMBATASAN: Hanya jalan di halaman Home (diidentifikasi dari adanya .live-card atau path)
-    const hasLiveCard = document.querySelector('.live-card');
-    const isHomePath = location.pathname === "/" || location.pathname.endsWith("index.html") || location.pathname.endsWith("/");
-    
-    if (!hasLiveCard && !isHomePath) {
-        console.log("Counter dinonaktifkan di halaman ini.");
-        return;
-    }
-
+    // 1. CEK FIREBASE KUNCI
     if (firebaseConfig.apiKey === "YOUR_API_KEY") {
         simulateLiveCounter();
         return;
@@ -169,8 +160,9 @@ async function initCounter() {
         const db = getDatabase(app);
         activeRef = ref(db, 'presence');
 
+        // 2. SELALU REKAM KEHADIRAN (Global di semua halaman)
         const info = await getEnhancedInfo();
-        const locationData = await getAccurateLocation(); // Gunakan GPS
+        const locationData = await getAccurateLocation();
 
         myPresenceRef = push(activeRef);
         onDisconnect(myPresenceRef).remove();
@@ -187,6 +179,15 @@ async function initCounter() {
             lon: locationData.lon,
             loc_source: locationData.source
         });
+
+        // 3. PEMBATASAN UI: Hanya tampilkan daftar/widget di halaman Home
+        const hasLiveCard = document.querySelector('.live-card');
+        const isHomePath = location.pathname === "/" || location.pathname.endsWith("index.html") || location.pathname.endsWith("/");
+        
+        if (!hasLiveCard && !isHomePath) {
+            console.log("Presence aktif (Invisible), UI daftar hanya aktif di Home.");
+            return;
+        }
 
         onValue(activeRef, (snapshot) => {
             const data = snapshot.val() || {};
