@@ -1,0 +1,14 @@
+# Local Environment & Secrets
+.env
+.env.local
+.firebase/
+firebase-debug.log*
+.firebaserc
+
+# OS Files
+Thumbs.db
+Desktop.ini
+
+# IDEs
+.vscode/
+.idea/
