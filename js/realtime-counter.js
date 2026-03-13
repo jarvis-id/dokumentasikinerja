@@ -21,24 +21,28 @@ const firebaseConfig = {
 let activeRef = null;
 let myPresenceRef = null;
 
-/// Fungsi untuk mendapatkan informasi browser dan perangkat
+// Fungsi untuk mendapatkan informasi browser dan perangkat
 function getBrowserInfo() {
     const ua = navigator.userAgent;
-    let browser = "Unknown Browser";
+    let browser = "Browser";
     let device = "Desktop";
 
     if (ua.includes("Firefox")) browser = "Firefox";
-    else if (ua.includes("SamsungBrowser")) browser = "Samsung Browser";
+    else if (ua.includes("SamsungBrowser")) browser = "Samsung";
     else if (ua.includes("Opera") || ua.includes("OPR")) browser = "Opera";
-    else if (ua.includes("Trident")) browser = "IE";
     else if (ua.includes("Edge")) browser = "Edge";
     else if (ua.includes("Chrome")) browser = "Chrome";
     else if (ua.includes("Safari")) browser = "Safari";
 
-    // Deteksi yang lebih akurat untuk perangkat mobile
-    if (/Mobi|Android|iPhone|iPod/i.test(ua)) device = "Mobile";
-    else if (/Tablet|iPad/i.test(ua)) device = "Tablet";
+    // Deteksi Mobile & Tablet yang lebih kuat
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+        device = "Mobile";
+    }
+    if (/iPad|tablet/i.test(ua)) {
+        device = "Tablet";
+    }
 
+    console.log("Device Terdeteksi:", device, "| Browser:", browser);
     return { browser, device };
 }
 
@@ -67,7 +71,6 @@ async function initCounter() {
         const db = getDatabase(app);
         activeRef = ref(db, 'presence');
 
-        // Ambil data detail
         const { browser, device } = getBrowserInfo();
         const location = await getLocation();
 
@@ -87,10 +90,8 @@ async function initCounter() {
             updateCounterUI(devices.length, devices);
         });
 
-        console.log("Firebase Real-time Counter berhasil terhubung!");
-
     } catch (error) {
-        console.error("DIAGNOSIS FIREBASE ERROR:", error);
+        console.error("FIREBASE ERROR:", error);
         simulateLiveCounter();
     }
 }
@@ -112,32 +113,28 @@ function updateCounterUI(count, devices = []) {
     // Update Daftar Detail
     let listEl = document.getElementById('device-list');
     if (!listEl && countEl) {
-        // Jika list belum ada tapi counter ada (seperti di Home), sisipkan list di bawah parent counter
         listEl = document.createElement('div');
         listEl.id = 'device-list';
-        listEl.style.borderTop = "1px solid #eee";
+        listEl.style.borderTop = "1px solid rgba(0,0,0,0.1)";
         listEl.style.marginTop = "10px";
         listEl.style.paddingTop = "10px";
         listEl.style.width = "100%";
         
-        // Cari parent terdekat (live-card di Home)
         const parent = countEl.closest('.live-card') || countEl.parentElement.parentElement;
-        if (parent.classList.contains('live-card')) {
-            parent.style.flexWrap = "wrap";
-        }
+        parent.style.flexWrap = "wrap"; 
         parent.appendChild(listEl);
     }
 
     if (listEl) {
         if (devices.length > 0) {
-            listEl.innerHTML = `<strong>Rincian Perangkat:</strong><ul style="list-style:none; padding:0; margin:8px 0 0 0;">` +
+            listEl.innerHTML = `<strong>Rincian Perangkat:</strong><ul style="list-style:none; padding:0; margin:10px 0 0 0;">` +
                 devices.map(d => `
-                    <li style="margin-bottom:8px; padding:8px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:11px; border:1px solid rgba(0,0,0,0.05); color: #2c3e50;">
+                    <li style="margin-bottom:8px; padding:10px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:11px; border:1px solid rgba(0,0,0,0.05); color: #2c3e50;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <strong>${d.device}</strong>
-                            <span style="font-size:9px; background:#3498db; color:white; padding:2px 6px; border-radius:10px;">${d.browser}</span>
+                            <strong>${d.device || 'Perangkat Online'}</strong>
+                            <span style="font-size:9px; background:#3498db; color:white; padding:2px 8px; border-radius:10px;">${d.browser || 'Browser'}</span>
                         </div>
-                        <div style="color:#7f8c8d; margin-top:3px;">📍 ${d.location || 'Unknown'}</div>
+                        <div style="color:#7f8c8d; margin-top:4px;">📍 ${d.location || 'Lokasi Tersembunyi'}</div>
                     </li>
                 `).join('') + `</ul>`;
             listEl.style.display = "block";
