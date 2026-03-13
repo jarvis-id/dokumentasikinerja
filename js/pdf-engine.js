@@ -127,43 +127,24 @@ function prepareContent() {
 
 function triggerPrint() { prepareContent(); setTimeout(window.print, 500); }
 
-async function triggerPDF() {
-    const defaultName = "Laporan_Kinerja_" + new Date().toISOString().slice(0, 10);
-    let fileName = prompt("Masukkan nama file PDF:", defaultName);
-
-    if (fileName === null) return; 
-    if (!fileName.toLowerCase().endsWith('.pdf')) fileName += '.pdf';
-
-    prepareContent();
-    const element = document.getElementById('print-content-target');
+/**
+ * Alur Baru: Simpan ID terpilih dan alihkan ke halaman Preview khusus PDF
+ */
+function triggerPDF() {
+    const selectedIds = Array.from(document.querySelectorAll('.report-cb:checked')).map(cb => parseFloat(cb.value));
     
-    // Paksa lebar elemen 210mm (A4 standar) agar snapshot 1:1
-    const originalWidth = element.style.width;
-    element.style.width = "794px"; 
-    
-    const opt = {
-        margin: [0, 0, 0, 0], // Margin Sistem Nol untuk kontrol penuh CSS
-        filename: fileName,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 2, 
-            windowWidth: 800, 
-            scrollY: 0,
-            useCORS: true,
-            letterRendering: true
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-    };
+    if (selectedIds.length === 0) {
+        Jarvis.pandu('pilih_data_dulu');
+        return;
+    }
 
+    // Simpan data terpilih ke session agar bisa dibaca halaman preview
+    sessionStorage.setItem('selected_print_ids', JSON.stringify(selectedIds));
+    
     Jarvis.pandu('memproses_pdf');
     
-    try {
-        await html2pdf().set(opt).from(element).save();
-    } finally {
-        // Kembalikan lebar asli setelah selesai
-        element.style.width = originalWidth;
-    }
+    // Alihkan ke halaman pratinjau khusus
+    window.location.href = "print-preview.html";
 }
 
 function restoreToEditor(id) {
