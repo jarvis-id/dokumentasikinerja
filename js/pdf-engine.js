@@ -137,17 +137,17 @@ async function triggerPDF() {
     prepareContent();
     const element = document.getElementById('print-content-target');
     
-    // Paksa lebar elemen agar snapshot identik dengan lebar A4 (~210mm di 96dpi)
+    // Paksa lebar elemen 190mm (~720px) agar snapshot pas dan centered
     const originalWidth = element.style.width;
-    element.style.width = "794px"; 
+    element.style.width = "720px"; 
     
     const opt = {
-        margin: [0, 0, 0, 0], // Margin Nol agar instruksi A4 297mm di CSS tidak terganggu
+        margin: [10, 10, 10, 10], // Margin fisik 10mm di semua sisi
         filename: fileName,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
             scale: 2, 
-            windowWidth: 800, 
+            windowWidth: 720, 
             scrollY: 0,
             useCORS: true,
             letterRendering: true
