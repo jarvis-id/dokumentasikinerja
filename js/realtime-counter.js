@@ -21,12 +21,23 @@ const firebaseConfig = {
 let activeRef = null;
 let myPresenceRef = null;
 
-// Fungsi untuk mendapatkan informasi browser dan perangkat
-function getBrowserInfo() {
+// Fungsi untuk mendapatkan informasi browser dan perangkat (LAMA & MODERN)
+function getBaseBrowserInfo() {
     const ua = navigator.userAgent;
     let browser = "Browser";
     let device = "Desktop";
+    let brand = "";
+    let model = "";
+    let os = "OS";
 
+    // 1. Deteksi OS dasar
+    if (ua.includes("Windows")) os = "Windows";
+    else if (ua.includes("Macintosh")) os = "macOS";
+    else if (ua.includes("Android")) os = "Android";
+    else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
+    else if (ua.includes("Linux")) os = "Linux";
+
+    // 2. Deteksi Browser
     if (ua.includes("Firefox")) browser = "Firefox";
     else if (ua.includes("SamsungBrowser")) browser = "Samsung";
     else if (ua.includes("Opera") || ua.includes("OPR")) browser = "Opera";
@@ -34,7 +45,7 @@ function getBrowserInfo() {
     else if (ua.includes("Chrome")) browser = "Chrome";
     else if (ua.includes("Safari")) browser = "Safari";
 
-    // Deteksi Mobile & Tablet yang lebih kuat
+    // 3. Deteksi Tipe Perangkat
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
         device = "Mobile";
     }
@@ -42,8 +53,44 @@ function getBrowserInfo() {
         device = "Tablet";
     }
 
-    console.log("Device Terdeteksi:", device, "| Browser:", browser);
-    return { browser, device };
+    // 4. Deteksi Merek & Model (Parsing Teks)
+    if (os === "iOS") {
+        brand = "Apple";
+        model = ua.includes("iPhone") ? "iPhone" : "iPad";
+    } else if (os === "Android") {
+        // Ekstraksi model dari Android UA: (Linux; Android 10; SM-G960F)
+        const match = ua.match(/Android\s+[^;]+;\s+([^;)]+)/);
+        if (match) {
+            model = match[1].split('Build')[0].trim();
+            if (/SM-|GT-|SHV-/i.test(model)) brand = "Samsung";
+            else if (/Mi |Redmi/i.test(model)) brand = "Xiaomi";
+            else if (/CPH|PCH|PB|PA/i.test(model)) brand = "Oppo";
+            else if (/V20|V21|V19/i.test(model)) brand = "Vivo";
+            else if (/RMX/i.test(model)) brand = "Realme";
+        }
+    } else {
+        brand = os; // Desktop menggunakan OS sebagai merek
+        model = os;
+    }
+
+    return { browser, device, brand, model, os };
+}
+
+// Fungsi pembungkus (Async) untuk mendapatkan data lebih akurat jika browser mendukung
+async function getEnhancedInfo() {
+    let info = getBaseBrowserInfo();
+
+    // Gunakan modern User-Agent Client Hints jika tersedia (lebih akurat)
+    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+        try {
+            const hints = await navigator.userAgentData.getHighEntropyValues(['model', 'platform', 'platformVersion']);
+            if (hints.model) info.model = hints.model;
+            if (hints.platform) info.os = hints.platform;
+        } catch (e) {}
+    }
+    
+    console.log("Full Deteksi:", info);
+    return info;
 }
 
 // Fungsi untuk mendapatkan lokasi via IP API
@@ -71,7 +118,7 @@ async function initCounter() {
         const db = getDatabase(app);
         activeRef = ref(db, 'presence');
 
-        const { browser, device } = getBrowserInfo();
+        const info = await getEnhancedInfo();
         const location = await getLocation();
 
         myPresenceRef = push(activeRef);
@@ -79,8 +126,11 @@ async function initCounter() {
         
         set(myPresenceRef, {
             last_online: serverTimestamp(),
-            device: device,
-            browser: browser,
+            device: info.device,
+            brand: info.brand,
+            model: info.model,
+            os: info.os,
+            browser: info.browser,
             location: location
         });
 
@@ -131,7 +181,7 @@ function updateCounterUI(count, devices = []) {
                 devices.map(d => `
                     <li style="margin-bottom:8px; padding:10px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:11px; border:1px solid rgba(0,0,0,0.05); color: #2c3e50;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <strong>${d.device || 'Perangkat Online'}</strong>
+                            <strong>${d.brand || ''} ${d.model || d.device || 'Perangkat Online'}</strong>
                             <span style="font-size:9px; background:#3498db; color:white; padding:2px 8px; border-radius:10px;">${d.browser || 'Browser'}</span>
                         </div>
                         <div style="color:#7f8c8d; margin-top:4px;">📍 ${d.location || 'Lokasi Tersembunyi'}</div>
