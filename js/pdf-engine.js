@@ -147,18 +147,29 @@ async function triggerPDF() {
 
     prepareContent();
     const element = document.getElementById('print-content-target');
+    
+    // Paksa lebar elemen agar stabil saat di-render html2canvas (mencegah potong samping)
+    element.style.width = "794px"; // Lebar standar A4 di 96dpi
+    
     const opt = {
-        margin: [0, 0, -1, 0], // Bottom margin set to -1 to absorb any pixel overflow decimals created by html2canvas rendering
+        margin: [10, 5, 10, 5], // Atas, Kiri, Bawah, Kanan (dalam mm)
         filename: fileName,
-        image: { type: 'jpeg', quality: 0.8 },
-        html2canvas: { scale: 2, windowWidth: 1024, scrollY: 0 },
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            letterRendering: true,
+            windowWidth: 800 // Kunci viewport agar tidak mengikuti layar HP yang sempit
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
     };
 
-    Jarvis.pandu('memproses_pdf');
-    alert("Sedang memproses PDF...");
-    await html2pdf().set(opt).from(element).save();
+    Jarvis.say("Memproses dokumen.");
+    await html2pdf().set(opt).from(element).toPdf().get('pdf').then(function (pdf) {
+        // Setelah selesai, kembalikan gaya elemen jika perlu
+        element.style.width = "";
+    }).save();
 }
 
 function restoreToEditor(id) {
@@ -175,3 +186,19 @@ function deleteItem(e, id) {
         localStorage.setItem('lapdok_history', JSON.stringify(h.filter(x=>x.id!==id))); 
         updateUI(); 
         Jarvis.pandu('hapus');
+    } 
+}
+
+// Gunakan DOMContentLoaded agar lebih cepat muncul dibanding window.onload
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("PDF Engine Loaded. Checking database...");
+    const checkData = localStorage.getItem('lapdok_history');
+    console.log("History found:", checkData ? JSON.parse(checkData).length : 0, "records");
+    
+    updateUI();
+    setTimeout(() => {
+        if (document.querySelectorAll('.report-cb').length > 0) {
+            Jarvis.pandu('pilih_cetak');
+        }
+    }, 500);
+});
