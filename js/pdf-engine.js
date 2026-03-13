@@ -137,17 +137,17 @@ async function triggerPDF() {
     prepareContent();
     const element = document.getElementById('print-content-target');
     
-    // Paksa lebar elemen 190mm (~720px) agar snapshot pas dan centered
+    // Paksa lebar elemen 210mm (A4 standar) agar snapshot 1:1
     const originalWidth = element.style.width;
-    element.style.width = "720px"; 
+    element.style.width = "794px"; 
     
     const opt = {
-        margin: [10, 10, 10, 10], // Margin fisik 10mm di semua sisi
+        margin: [0, 0, 0, 0], // Margin Sistem Nol untuk kontrol penuh CSS
         filename: fileName,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
             scale: 2, 
-            windowWidth: 720, 
+            windowWidth: 800, 
             scrollY: 0,
             useCORS: true,
             letterRendering: true
