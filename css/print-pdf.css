@@ -103,7 +103,7 @@ body {
     width: 210mm; 
     padding: 10mm 15mm; 
     background: white; 
-    margin: 0 auto; /* Continuous look: No top/bottom margin */
+    margin: 20px auto; /* Restored margin for visual separation on screen */
     box-shadow: 0 0 10px rgba(0,0,0,0.1); 
     box-sizing: border-box;
     position: relative;
