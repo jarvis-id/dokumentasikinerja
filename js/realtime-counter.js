@@ -132,22 +132,28 @@ async function getAccurateLocation() {
     });
 }
 
-// Fungsi untuk mengubah Koordinat menjadi Alamat Nyata (Nominatim OpenStreetMap)
+// Fungsi untuk mengubah Koordinat menjadi Alamat Nyata (Nominatim OpenStreetMap - Gratis Tanpa Kartu Kredit)
 async function getReverseGeocoding(lat, lon) {
     try {
+        // Menggunakan Nominatim (OSM) yang 100% gratis selamanya
         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, {
-            headers: { 'Accept-Language': 'id' } // Paksa bahasa Indonesia
+            headers: { 'Accept-Language': 'id' } 
         });
         const data = await response.json();
         
-        // Pilih informasi yang paling relevan (Desa/Kelurahan, Kota, atau Jalan)
-        const addr = data.address;
-        const locationName = addr.village || addr.suburb || addr.city_district || addr.city || addr.town || "Lokasi Spesifik";
-        const city = addr.city || addr.regency || addr.state || "";
-        
-        return `${locationName}, ${city}`;
+        if (data && data.address) {
+            const a = data.address;
+            // Menyusun alamat yang lebih manusiawi dan detail
+            const jalan = a.road || a.suburb || "";
+            const area = a.village || a.neighbourhood || a.suburb || "";
+            const kota = a.city || a.regency || a.state || "";
+            
+            const fullAddr = [jalan, area, kota].filter(Boolean).join(", ");
+            return fullAddr || "Lokasi Spesifik";
+        }
+        return "Alamat Terkunci (OSM)";
     } catch (e) {
-        console.error("Reverse Geocoding Error:", e);
+        console.error("OSM Geocoding Error:", e);
         return "Alamat Terkunci";
     }
 }
@@ -329,9 +335,13 @@ window.closeTrafficMap = function() {
 function initLeafletMap(lat, lon) {
     if (mapInstance) mapInstance.remove();
     setTimeout(() => {
-        mapInstance = L.map('traffic-map-container').setView([lat, lon], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+        mapInstance = L.map('traffic-map-container').setView([lat, lon], 17); // Zoom lebih dalam untuk tampilan satelit
+        
+        // Menggunakan Google Maps Satellite Hybrid (Satelit + Label)
+        L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains:['mt0','mt1','mt2','mt3'],
+            attribution: '© Google Maps'
         }).addTo(mapInstance);
         
         L.marker([lat, lon]).addTo(mapInstance)
