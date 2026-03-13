@@ -103,8 +103,8 @@ body {
     width: 210mm; 
     padding: 10mm 15mm; 
     background: white; 
-    margin: 20px auto;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1); /* Shadow for screen */
+    margin: 0 auto; /* Continuous look: No top/bottom margin */
+    box-shadow: 0 0 10px rgba(0,0,0,0.1); 
     box-sizing: border-box;
     position: relative;
     overflow: hidden; 
@@ -120,13 +120,9 @@ body {
     }
 }
 
-/* Helper for automatic pagination */
-.page-break-trigger {
-    page-break-after: always;
-    height: 0;
-    margin: 0;
-    padding: 0;
-}
+
+/* Helper for automatic pagination - Removed as we use separate containers now */
+
 
 .print-main-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 5mm; padding-bottom: 3mm; margin-top: 0; }
 .print-job-item { 
