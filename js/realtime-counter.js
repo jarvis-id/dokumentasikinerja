@@ -1,414 +1,351 @@
-/**
- * Real-time Device Counter using Firebase (Lite)
- * Fitur ini memantau perangkat yang sedang aktif secara real-time.
- */
-
-// CONFIGURATION:
-// Step 1: Login to console.firebase.google.com
-// Step 2: Regenerate your API key if it was leaked.
-// Step 3: RESTRICT your API key to your domain (jarvis-id.github.io/*) in Google Cloud Console.
-const firebaseConfig = {
-    apiKey: "AIzaSyCh9Rsoy_mLyKUqIZaQXcxow3Q79dv00ZE", // Kunci baru yang aman dan terbatas
-    authDomain: "lapdok-live.firebaseapp.com",
-    databaseURL: "https://lapdok-live-default-rtdb.asia-southeast1.firebasedatabase.app/",
-    projectId: "lapdok-live",
-    storageBucket: "lapdok-live.firebasestorage.app",
-    messagingSenderId: "813384988119",
-    appId: "1:813384988119:web:48ac10346d6920a7e78792"
-};
-
-// --- LOGIKA PRESENCE ---
-let activeRef = null;
-let myPresenceRef = null;
-
-// Fungsi untuk mendapatkan informasi browser dan perangkat (LAMA & MODERN)
-function getBaseBrowserInfo() {
-    const ua = navigator.userAgent;
-    let browser = "Browser";
-    let device = "Desktop";
-    let brand = "";
-    let model = "";
-    let os = "OS";
-
-    // 1. Deteksi OS dasar
-    if (ua.includes("Windows")) os = "Windows";
-    else if (ua.includes("Macintosh")) os = "macOS";
-    else if (ua.includes("Android")) os = "Android";
-    else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
-    else if (ua.includes("Linux")) os = "Linux";
-
-    // 2. Deteksi Browser
-    if (ua.includes("Firefox")) browser = "Firefox";
-    else if (ua.includes("SamsungBrowser")) browser = "Samsung";
-    else if (ua.includes("Opera") || ua.includes("OPR")) browser = "Opera";
-    else if (ua.includes("Edge")) browser = "Edge";
-    else if (ua.includes("Chrome")) browser = "Chrome";
-    else if (ua.includes("Safari")) browser = "Safari";
-
-    // 3. Deteksi Tipe Perangkat
-    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
-        device = "Mobile";
-    }
-    if (/iPad|tablet/i.test(ua)) {
-        device = "Tablet";
-    }
-
-    // 4. Deteksi Merek & Model (Parsing Teks)
-    if (os === "iOS") {
-        brand = "Apple";
-        model = ua.includes("iPhone") ? "iPhone" : "iPad";
-    } else if (os === "Android") {
-        // Ekstraksi model dari Android UA: (Linux; Android 10; SM-G960F)
-        const match = ua.match(/Android\s+[^;]+;\s+([^;)]+)/);
-        if (match) {
-            model = match[1].split('Build')[0].trim();
-            if (/SM-|GT-|SHV-/i.test(model)) brand = "Samsung";
-            else if (/Mi |Redmi/i.test(model)) brand = "Xiaomi";
-            else if (/CPH|PCH|PB|PA/i.test(model)) brand = "Oppo";
-            else if (/V20|V21|V19/i.test(model)) brand = "Vivo";
-            else if (/RMX/i.test(model)) brand = "Realme";
-        }
-    } else {
-        brand = os; // Desktop menggunakan OS sebagai merek
-        model = os;
-    }
-
-    return { browser, device, brand, model, os };
-}
-
-// Fungsi pembungkus (Async) untuk mendapatkan data lebih akurat jika browser mendukung
-async function getEnhancedInfo() {
-    let info = getBaseBrowserInfo();
-
-    // Gunakan modern User-Agent Client Hints jika tersedia (lebih akurat)
-    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
-        try {
-            const hints = await navigator.userAgentData.getHighEntropyValues(['model', 'platform', 'platformVersion']);
-            if (hints.model) info.model = hints.model;
-            if (hints.platform) info.os = hints.platform;
-        } catch (e) {}
-    }
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LapDok - Dokumentasi Kinerja</title>
     
-    console.log("Full Deteksi:", info);
-    return info;
-}
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2642522351768171"
+     crossorigin="anonymous"></script>
 
-// Fungsi untuk mendapatkan lokasi via GPS (HTML5 Geolocation) dengan Fallback IP
-async function getAccurateLocation() {
-    return new Promise((resolve) => {
-        if (!navigator.geolocation) {
-            console.log("Geolocation tidak didukung browser.");
-            resolve(getIpFallbackLocation());
-            return;
+    <!-- PWA Setup -->
+    <link rel="manifest" href="assets/manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+
+    <!-- Script Jarvis & Counter -->
+    <script src="js/jarvis.js"></script>
+    <script src="js/realtime-counter.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f4f7f6; 
+            color: #333; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 50px;
         }
 
-        const options = {
-            enableHighAccuracy: true,
-            timeout: 10000, // Tambah waktu ke 10 detik agar Desktop lebih stabil mengunci lokasi via Wi-Fi
-            maximumAge: 0
-        };
-
-        navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-                
-                // Sinkronisasi Alamat: Ambil nama lokasi asli berdasarkan Koordinat (Reverse Geocoding)
-                const realAddress = await getReverseGeocoding(lat, lon);
-                
-                resolve({
-                    text: `${realAddress} (LOKASI GPS)`,
-                    lat: lat,
-                    lon: lon,
-                    source: "GPS"
-                });
-            },
-            async (err) => {
-                console.warn(`GPS Error (${err.code}): ${err.message}. Menggunakan IP Fallback.`);
-                resolve(await getIpFallbackLocation());
-            },
-            options
-        );
-    });
-}
-
-// Fungsi untuk mengubah Koordinat menjadi Alamat Nyata (Nominatim OpenStreetMap - Gratis Tanpa Kartu Kredit)
-async function getReverseGeocoding(lat, lon) {
-    try {
-        // Menggunakan Nominatim (OSM) yang 100% gratis selamanya
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`, {
-            headers: { 'Accept-Language': 'id' } 
-        });
-        const data = await response.json();
-        
-        if (data && data.address) {
-            const a = data.address;
-            // Menyusun alamat yang lebih manusiawi dan detail
-            const jalan = a.road || a.suburb || "";
-            const area = a.village || a.neighbourhood || a.suburb || "";
-            const kota = a.city || a.regency || a.state || "";
-            
-            const fullAddr = [jalan, area, kota].filter(Boolean).join(", ");
-            return fullAddr || "Lokasi Spesifik";
+        .navbar { 
+            display: flex; 
+            justify-content: space-around; 
+            background: #34495e; 
+            padding: 12px 0; 
+            position: sticky; 
+            top: 0; 
+            z-index: 999; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); 
         }
-        return "Alamat Terkunci (OSM)";
-    } catch (e) {
-        console.error("OSM Geocoding Error:", e);
-        return "Alamat Terkunci";
-    }
-}
-
-// Fungsi Cadangan jika GPS Gagal
-async function getIpFallbackLocation() {
-    try {
-        const response = await fetch('https://ipapi.co/json/');
-        const data = await response.json();
-        return {
-            text: `${data.city}, ${data.country_name}`,
-            lat: data.latitude,
-            lon: data.longitude,
-            source: "IP"
-        };
-    } catch (e) {
-        return { text: "Lokasi Tidak Diketahui", lat: 0, lon: 0, source: "None" };
-    }
-}
-
-async function initCounter() {
-    // 1. CEK FIREBASE KUNCI
-    if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-        simulateLiveCounter();
-        return;
-    }
-
-    try {
-        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
-        const { getDatabase, ref, onValue, push, onDisconnect, set, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js");
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        activeRef = ref(db, 'presence');
-
-        // 2. SELALU REKAM KEHADIRAN (Global di semua halaman)
-        const info = await getEnhancedInfo();
-        const locationData = await getAccurateLocation();
-
-        myPresenceRef = push(activeRef);
-        onDisconnect(myPresenceRef).remove();
-        
-        set(myPresenceRef, {
-            last_online: serverTimestamp(),
-            device: info.device,
-            brand: info.brand,
-            model: info.model,
-            os: info.os,
-            browser: info.browser,
-            location: locationData.text,
-            lat: locationData.lat,
-            lon: locationData.lon,
-            loc_source: locationData.source
-        });
-
-        // 3. PEMBATASAN UI: Hanya tampilkan daftar/widget di halaman Home
-        const hasLiveCard = document.querySelector('.live-card');
-        const isHomePath = location.pathname === "/" || location.pathname.endsWith("index.html") || location.pathname.endsWith("/");
-        
-        if (!hasLiveCard && !isHomePath) {
-            console.log("Presence aktif (Invisible), UI daftar hanya aktif di Home.");
-            return;
+        .navbar a { 
+            color: white; 
+            text-decoration: none; 
+            font-weight: bold; 
+            font-size: 13px; 
+            opacity: 0.7; 
+        }
+        .navbar a.active { 
+            opacity: 1; 
+            border-bottom: 2px solid #00d2ff; 
         }
 
-        onValue(activeRef, (snapshot) => {
-            const data = snapshot.val() || {};
-            const devices = Object.values(data);
-            updateCounterUI(devices.length, devices);
-        });
-
-    } catch (error) {
-        console.error("FIREBASE ERROR:", error);
-        simulateLiveCounter();
-    }
-}
-
-function updateCounterUI(count, devices = []) {
-    let countEl = document.getElementById('active-devices');
-    
-    if (!countEl) {
-        injectCounterWidget();
-        countEl = document.getElementById('active-devices');
-    }
-
-    if (countEl) {
-        countEl.innerText = count;
-        countEl.style.transform = "scale(1.2)";
-        setTimeout(() => countEl.style.transform = "scale(1)", 300);
-    }
-
-    // Update Daftar Detail
-    let listEl = document.getElementById('device-list');
-    if (!listEl && countEl) {
-        listEl = document.createElement('div');
-        listEl.id = 'device-list';
-        listEl.style.cssText = "border-top: 1px solid rgba(0,0,0,0.1); margin-top: 10px; padding-top: 10px; width: 100%; position: relative; z-index: 10;";
-        
-        const parent = countEl.closest('.live-card') || countEl.parentElement.parentElement;
-        parent.style.flexWrap = "wrap"; 
-        parent.appendChild(listEl);
-    }
-
-    if (listEl) {
-        window._activeDevices = devices; 
-        if (devices.length > 0) {
-            listEl.innerHTML = `<strong>Rincian Perangkat (Klik untuk Peta):</strong><ul style="list-style:none; padding:0; margin:10px 0 0 0;">` +
-                devices.map((d, index) => `
-                    <li onclick='window.openMapModalByIndex(${index})' 
-                        style="margin-bottom:8px; padding:10px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:11px; border:1px solid rgba(0,0,0,0.05); color: #2c3e50; cursor:pointer; transition:all 0.2s; position:relative; z-index:20;"
-                        onmouseover="this.style.background='rgba(52,152,219,0.1)'; this.style.borderColor='#3498db'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)';"
-                        onmouseout="this.style.background='rgba(0,0,0,0.03)'; this.style.borderColor='rgba(0,0,0,0.05)'; this.style.boxShadow='none';"
-                    >
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <strong>${d.brand || ''} ${d.model || d.device || 'Perangkat Online'}</strong>
-                            <span style="font-size:9px; background:#3498db; color:white; padding:2px 8px; border-radius:10px;">${d.browser || 'Browser'}</span>
-                        </div>
-                        <div style="color:#7f8c8d; margin-top:4px;">📍 ${d.location || 'Lokasi Tersembunyi'}</div>
-                    </li>
-                `).join('') + `</ul>`;
-            listEl.style.display = "block";
-        } else {
-            listEl.style.display = "none";
+        header {
+            padding: 40px 20px;
+            text-align: center;
+            background: #2c3e50;
+            color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-    }
-}
-
-// Fitur Peta Modal (Lampirkan ke Window)
-let mapInstance = null;
-window.openMapModalByIndex = function(index) {
-    const device = window._activeDevices[index];
-    if (!device || !device.lat || !device.lon) {
-        alert("Koordinat lokasi tidak tersedia untuk perangkat ini.");
-        return;
-    }
-
-    injectMapStyles();
-    let modal = document.getElementById('traffic-map-modal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'traffic-map-modal';
-        modal.innerHTML = `
-            <div class="modal-bg" onclick="window.closeTrafficMap()"></div>
-            <div class="modal-content">
-                <div class="modal-header">
-                    <span id="map-device-name">Detail Lokasi</span>
-                    <button onclick="window.closeTrafficMap()">✕</button>
-                </div>
-                <div id="traffic-map-container" style="height: 300px; background: #eee;"></div>
-                <div class="modal-footer" id="map-device-info"></div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-
-    document.getElementById('map-device-name').innerText = `${device.brand || ''} ${device.model || device.device}`;
-    document.getElementById('map-device-info').innerText = `🌍 ${device.location} | 🔍 ${device.lat}, ${device.lon}`;
-    modal.style.display = 'flex';
-
-    if (typeof L === 'undefined') {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-        document.head.appendChild(link);
-
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.onload = () => initLeafletMap(device.lat, device.lon);
-        document.head.appendChild(script);
-    } else {
-        initLeafletMap(device.lat, device.lon);
-    }
-};
-
-window.closeTrafficMap = function() {
-    const modal = document.getElementById('traffic-map-modal');
-    if (modal) modal.style.display = 'none';
-};
-
-function initLeafletMap(lat, lon) {
-    if (mapInstance) mapInstance.remove();
-    setTimeout(() => {
-        mapInstance = L.map('traffic-map-container').setView([lat, lon], 17); // Zoom lebih dalam untuk tampilan satelit
-        
-        // Menggunakan Google Maps Satellite Hybrid (Satelit + Label)
-        L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains:['mt0','mt1','mt2','mt3'],
-            attribution: '© Google Maps'
-        }).addTo(mapInstance);
-        
-        L.marker([lat, lon]).addTo(mapInstance)
-            .bindPopup('Posisi Pengunjung')
-            .openPopup();
-    }, 100);
-}
-
-function injectMapStyles() {
-    if (document.getElementById('map-modal-css')) return;
-    const style = document.createElement('style');
-    style.id = 'map-modal-css';
-    style.innerHTML = `
-        #traffic-map-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            display: none; align-items: center; justify-content: center; z-index: 9999999;
+        header h1 {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
-        .modal-bg { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
-        .modal-content {
-            position: relative; width: 90%; max-width: 500px; background: white;
-            border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 20px;
+            gap: 25px;
+        }
+
+        .action-card {
+            background: white;
+            border: 1px solid #d1d8dd;
+            border-radius: 8px;
+            padding: 35px 25px;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        
+        .jarvis-icon {
+            font-size: 45px;
+            margin-bottom: 15px;
+            color: #3498db;
+        }
+
+        .action-card h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .action-card p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .btn-start {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 18px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .btn-start:active {
+            background-color: #2980b9;
+            transform: translateY(2px);
+        }
+
+        .ad-container {
+            width: 100%;
+            max-width: 450px;
+            background: #ebf1f5;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
+            border: 1px dashed #cbd5e0;
+            position: relative;
+        }
+        .ad-container::before {
+            content: "Advertisement";
+            position: absolute;
+            font-size: 10px;
+            color: #a0aec0;
+            top: 5px;
+            left: 10px;
+        }
+
+        .quick-nav {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 450px;
+        }
+        .btn-ghost {
+            flex: 1;
+            background: white;
+            border: 1px solid #d1d8dd;
+            color: #34495e;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .btn-ghost:active {
+            background: #f8fafc;
+        }
+        .footer-info {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #ffffff;
+            color: #7f8c8d;
+            text-align: center;
+            padding: 8px;
+            font-size: 10px;
+            font-weight: bold;
+            border-top: 1px solid #d1d8dd;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        /* LIVE ACTIVITY WIDGET */
+        .live-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 15px 20px;
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07);
+        }
+        .live-info { display: flex; align-items: center; gap: 12px; }
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            background-color: #2ecc71;
+            border-radius: 50%;
+            position: relative;
+        }
+        .pulse-dot::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: #2ecc71;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+        .live-text { font-size: 11px; font-weight: bold; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; }
+        .live-count { font-size: 18px; font-weight: bold; color: #2c3e50; }
+        .live-label { font-size: 12px; color: #95a5a6; margin-left: 5px; }
+        
+        /* STICKY AD */
+        .sticky-ad-footer {
+            position: fixed;
+            bottom: 35px; /* Above footer-info */
+            left: 0;
+            width: 100%;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             z-index: 1000;
+            display: flex;
+            justify-content: center;
         }
-        .modal-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .modal-header span { font-weight: bold; font-size: 14px; color: #2c3e50; }
-        .modal-header button { background: none; border: none; font-size: 20px; cursor: pointer; color: #95a5a6; }
-        .modal-footer { padding: 12px; font-size: 11px; color: #7f8c8d; background: #f9f9f9; text-align: center; }
-        @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    `;
-    document.head.appendChild(style);
-}
+    </style>
+</head>
+<body>
 
-function injectCounterWidget() {
-    const widgetHTML = `
-        <div id="dynamic-live-counter" style="
-            background: white; border-radius: 12px; padding: 15px; margin: 20px auto;
-            max-width: 450px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            font-family: sans-serif; border: 1px solid #eee;
-        ">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <div style="width:10px; height:10px; background:#2ecc71; border-radius:50%; box-shadow:0 0 5px #2ecc71;"></div>
-                    <span style="font-size:10px; font-weight:bold; color:#7f8c8d; text-transform:uppercase; letter-spacing:1px;">Aktivitas Real-time</span>
-                </div>
-                <div>
-                    <span id="active-devices" style="font-size:20px; font-weight:bold; color:#2c3e50;">1</span>
-                    <span style="font-size:12px; color:#95a5a6; margin-left:5px;">Online</span>
-                </div>
+    <nav class="navbar">
+        <a href="index.html" class="active">🏠 Home</a>
+        <a href="pages/form.html">📝 Form Input</a>
+        <a href="pages/tampildata.html">📂 Riwayat Laporan</a>
+    </nav>
+
+    <header>
+        <h1>LapDok</h1>
+    </header>
+
+    <div class="main-content" style="padding-bottom: 60px;">
+                <div class="ad-container" style="border: none; background: transparent; padding: 0;">
+                <!-- Iklan_Header_LapDok -->
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-2642522351768171"
+                     data-ad-slot="7918954512"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
             </div>
-            <div id="device-list" style="border-top:1px solid #eee; padding-top:10px; display:none;"></div>
+
+        <div class="action-card">
+            <div class="jarvis-icon">🎙️</div>
+            <h2 id="home-status">Asisten Suara Menunggu</h2>
+            <p id="home-desc">Agar Jarvis dapat menyapa dan memandu Anda, silakan ketuk tombol di bawah untuk mengaktifkan sistem suara.</p>
+            
+            <button class="btn-start" id="btn-main-action" onclick="initializeHome()">🚀 Aktifkan & Mulai</button>
         </div>
-    `;
 
-    const container = document.querySelector('.main-content') || document.querySelector('.container') || document.body;
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = widgetHTML;
-    
-    if (container.firstChild) {
-        container.insertBefore(wrapper.firstElementChild, container.firstChild);
-    } else {
-        container.appendChild(wrapper.firstElementChild);
-    }
-}
+        <!-- LIVE ACTIVITY WIDGET -->
+        <div class="live-card">
+            <div class="live-info">
+                <div class="pulse-dot"></div>
+                <div class="live-text">Aktivitas Real-time</div>
+            </div>
+            <div>
+                <span class="live-count" id="active-devices">1</span>
+                <span class="live-label">Perangkat Aktif</span>
+            </div>
+        </div>
 
-function simulateLiveCounter() {
-    updateCounterUI(1, [{ device: "Desktop", brand: "Windows", model: "PC", browser: "Chrome", location: "Jakarta, Indonesia", lat: -6.2, lon: 106.81 }]);
-}
+        <div class="quick-nav">
+            <a href="pages/form.html" class="btn-ghost">📝 Langsung ke Form</a>
+            <a href="pages/tampildata.html" class="btn-ghost">🗂️ Riwayat Laporan</a>
+        </div>
 
-document.addEventListener('DOMContentLoaded', initCounter);
+    </div>
+
+    <div class="sticky-ad-footer">
+        <ins class="adsbygoogle"
+             style="display:inline-block;width:320px;height:50px"
+             data-ad-client="ca-pub-2642522351768171"
+             data-ad-slot="7918954512"></ins>
+        <script>
+             (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+    </div>
+
+    <div class="footer-info">
+        Sistem Dokumentasi Kinerja Lapangan Terpadu
+    </div>
+
+    <script>
+        // PWA Setup
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+            .then(() => console.log('Service Worker terdaftar dari Home'))
+            .catch((e) => console.log('Service Worker gagal terdaftar dari Home', e));
+        }
+
+        // Initialize Home State
+        let isActivated = false;
+
+        function initializeHome() {
+            if (!isActivated) {
+                // Sapaan Pertama Kali (Interaction needed for audio)
+                Jarvis.activate(); // Unlocks speech synth
+                Jarvis.say("Halo! Selamat datang di aplikasi Lap Dok. Saya adalah Jarvis yang akan memandu pekerjaan Anda.");
+                
+                const btn = document.getElementById('btn-main-action');
+                const status = document.getElementById('home-status');
+                const desc = document.getElementById('home-desc');
+                
+                status.innerText = "Sistem Aktif";
+                desc.innerText = "Jarvis telah siap. Ketuk sekali lagi untuk mulai mengisi laporan kinerja atau pilih menu di bawah.";
+                btn.innerText = "📝 Mulai Isi Laporan";
+                btn.style.background = "linear-gradient(90deg, #27ae60 0%, #2ecc71 100%)";
+                btn.style.boxShadow = "0 4px 15px rgba(39, 174, 96, 0.4)";
+                
+                isActivated = true;
+            } else {
+                startApp();
+            }
+        }
+
+        function startApp() {
+            const btn = document.getElementById('btn-main-action');
+            btn.innerText = "Membuka Form...";
+            btn.style.opacity = "0.7";
+            
+            // Beri jeda agar suara "Sistem Aktif" atau instruksi selesai
+            setTimeout(() => {
+                window.location.href = "pages/form.html";
+            }, 500);
+        }
+    </script>
+</body>
+</html>
