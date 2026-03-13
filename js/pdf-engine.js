@@ -136,11 +136,19 @@ async function triggerPDF() {
 
     prepareContent();
     const element = document.getElementById('print-content-target');
+    
+    // Opsi PDF yang diselaraskan agar mirip dengan Print asli
     const opt = {
-        margin: [0, 0, -1, 0], 
+        margin: [10, 10, 10, 10], // Margin standar kertas (mm)
         filename: fileName,
-        image: { type: 'jpeg', quality: 0.8 },
-        html2canvas: { scale: 2, windowWidth: 1024, scrollY: 0 },
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 2, 
+            windowWidth: 800, // Menyesuaikan dengan lebar A4 (~210mm)
+            scrollY: 0,
+            useCORS: true,
+            letterRendering: true
+        },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
     };
