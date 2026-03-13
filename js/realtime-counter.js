@@ -93,18 +93,56 @@ async function getEnhancedInfo() {
     return info;
 }
 
-/// Fungsi untuk mendapatkan lokasi via IP API (dengan Koordinat)
-async function getLocation() {
+// Fungsi untuk mendapatkan lokasi via GPS (HTML5 Geolocation) dengan Fallback IP
+async function getAccurateLocation() {
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+            console.log("Geolocation tidak didukung browser.");
+            resolve(getIpFallbackLocation());
+            return;
+        }
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+        };
+
+        navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                // Coba ambil nama kota berdasarkan koordinat (Reverse Geocoding ringan via IPAPI atau ganti teks)
+                const ipData = await getIpFallbackLocation();
+                resolve({
+                    text: `${ipData.text} (GPS Terkunci)`,
+                    lat: lat,
+                    lon: lon,
+                    source: "GPS"
+                });
+            },
+            async (err) => {
+                console.warn(`GPS Error (${err.code}): ${err.message}. Menggunakan IP Fallback.`);
+                resolve(await getIpFallbackLocation());
+            },
+            options
+        );
+    });
+}
+
+// Fungsi Cadangan jika GPS Gagal
+async function getIpFallbackLocation() {
     try {
         const response = await fetch('https://ipapi.co/json/');
         const data = await response.json();
         return {
             text: `${data.city}, ${data.country_name}`,
             lat: data.latitude,
-            lon: data.longitude
+            lon: data.longitude,
+            source: "IP"
         };
     } catch (e) {
-        return { text: "Lokasi Tidak Diketahui", lat: 0, lon: 0 };
+        return { text: "Lokasi Tidak Diketahui", lat: 0, lon: 0, source: "None" };
     }
 }
 
@@ -132,7 +170,7 @@ async function initCounter() {
         activeRef = ref(db, 'presence');
 
         const info = await getEnhancedInfo();
-        const locationData = await getLocation();
+        const locationData = await getAccurateLocation(); // Gunakan GPS
 
         myPresenceRef = push(activeRef);
         onDisconnect(myPresenceRef).remove();
@@ -146,7 +184,8 @@ async function initCounter() {
             browser: info.browser,
             location: locationData.text,
             lat: locationData.lat,
-            lon: locationData.lon
+            lon: locationData.lon,
+            loc_source: locationData.source
         });
 
         onValue(activeRef, (snapshot) => {
