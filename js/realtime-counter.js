@@ -105,22 +105,41 @@ function updateCounterUI(count, devices = []) {
 
     if (countEl) {
         countEl.innerText = count;
-        countEl.style.transform = "scale(1.3)";
+        countEl.style.transform = "scale(1.2)";
         setTimeout(() => countEl.style.transform = "scale(1)", 300);
     }
 
-    const listEl = document.getElementById('device-list');
+    // Update Daftar Detail
+    let listEl = document.getElementById('device-list');
+    if (!listEl && countEl) {
+        // Jika list belum ada tapi counter ada (seperti di Home), sisipkan list di bawah parent counter
+        listEl = document.createElement('div');
+        listEl.id = 'device-list';
+        listEl.style.borderTop = "1px solid #eee";
+        listEl.style.marginTop = "10px";
+        listEl.style.paddingTop = "10px";
+        listEl.style.width = "100%";
+        
+        // Cari parent terdekat (live-card di Home)
+        const parent = countEl.closest('.live-card') || countEl.parentElement.parentElement;
+        if (parent.classList.contains('live-card')) {
+            parent.style.flexWrap = "wrap";
+        }
+        parent.appendChild(listEl);
+    }
+
     if (listEl) {
         if (devices.length > 0) {
-            listEl.innerHTML = devices.map(d => `
-                <div style="margin-bottom:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid rgba(255,255,255,0.1); font-size:11px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <strong style="color:#fff;">${d.device}</strong>
-                        <span style="font-size:9px; background:#3498db; color:white; padding:1px 6px; border-radius:10px;">${d.browser}</span>
-                    </div>
-                    <div style="color:#bdc3c7; margin-top:3px; font-size:10px;">📍 ${d.location || 'Unknown'}</div>
-                </div>
-            `).join('');
+            listEl.innerHTML = `<strong>Rincian Perangkat:</strong><ul style="list-style:none; padding:0; margin:8px 0 0 0;">` +
+                devices.map(d => `
+                    <li style="margin-bottom:8px; padding:8px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:11px; border:1px solid rgba(0,0,0,0.05); color: #2c3e50;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <strong>${d.device}</strong>
+                            <span style="font-size:9px; background:#3498db; color:white; padding:2px 6px; border-radius:10px;">${d.browser}</span>
+                        </div>
+                        <div style="color:#7f8c8d; margin-top:3px;">📍 ${d.location || 'Unknown'}</div>
+                    </li>
+                `).join('') + `</ul>`;
             listEl.style.display = "block";
         } else {
             listEl.style.display = "none";
@@ -129,79 +148,40 @@ function updateCounterUI(count, devices = []) {
 }
 
 function injectCounterWidget() {
-    const isMobile = window.innerWidth <= 768;
-    
-    const style = document.createElement('style');
-    style.innerHTML = `
-        .counter-widget {
-            background: rgba(44, 62, 80, 0.95);
-            backdrop-filter: blur(10px);
-            color: white;
+    const widgetHTML = `
+        <div id="dynamic-live-counter" style="
+            background: white;
+            border-radius: 12px;
             padding: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-            font-family: 'Segoe UI', sans-serif;
-            border: 1px solid rgba(255,255,255,0.1);
-            z-index: 9999;
-        }
-        @media (min-width: 769px) {
-            .counter-widget {
-                position: fixed;
-                right: 20px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 260px;
-                border-radius: 16px;
-                animation: slideInRight 0.5s ease;
-            }
-        }
-        @media (max-width: 768px) {
-            .counter-widget {
-                position: relative;
-                width: 100%;
-                max-width: 450px;
-                margin: 20px auto;
-                border-radius: 12px;
-                box-sizing: border-box;
-            }
-        }
-        @keyframes slideInRight { from { transform: translate(100%, -50%); opacity:0; } to { transform: translate(0, -50%); opacity:1; } }
-        .presence-dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
-    `;
-    document.head.appendChild(style);
-
-    const widget = document.createElement('div');
-    widget.className = 'counter-widget';
-    widget.id = 'live-traffic-widget';
-    widget.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div class="presence-dot"></div>
-                <span style="font-size:10px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:#bdc3c7;">Aktivitas Real-time</span>
+            margin: 20px auto;
+            max-width: 450px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-family: sans-serif;
+            border: 1px solid #eee;
+        ">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:10px; height:10px; background:#2ecc71; border-radius:50%; box-shadow:0 0 5px #2ecc71;"></div>
+                    <span style="font-size:10px; font-weight:bold; color:#7f8c8d; text-transform:uppercase; letter-spacing:1px;">Aktivitas Real-time</span>
+                </div>
+                <div>
+                    <span id="active-devices" style="font-size:20px; font-weight:bold; color:#2c3e50;">1</span>
+                    <span style="font-size:12px; color:#95a5a6; margin-left:5px;">Online</span>
+                </div>
             </div>
-            <div>
-                <span id="active-devices" style="font-size:20px; font-weight:bold; color:#fff;">1</span>
-                <span style="font-size:10px; color:#bdc3c7; margin-left:3px;">Online</span>
-            </div>
+            <div id="device-list" style="border-top:1px solid #eee; paddingTop:10px; display:none;"></div>
         </div>
-        <div id="device-list" style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px; display:none;"></div>
     `;
 
-    // LOGIKA PENEMPATAN
-    if (!isMobile) {
-        // Desktop: Append ke body sebagai fixed sidebar
-        document.body.appendChild(widget);
-    } else {
-        // Mobile: Cari elemen navigasi cepat/tombol untuk ditaruh di bawahnya
-        const quickNav = document.querySelector('.quick-nav') || document.querySelector('.actions') || document.querySelector('.main-content');
-        if (quickNav) {
-            quickNav.parentNode.insertBefore(widget, quickNav.nextSibling);
-        } else {
-            document.body.appendChild(widget);
-        }
-    }
+    const container = document.querySelector('.main-content') || document.querySelector('.container') || document.body;
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = widgetHTML;
     
-    const existing = document.querySelector('.live-card');
-    if (existing) existing.style.display = 'none';
+    if (container.firstChild) {
+        container.insertBefore(wrapper.firstElementChild, container.firstChild);
+    } else {
+        container.appendChild(wrapper.firstElementChild);
+    }
 }
 
 function simulateLiveCounter() {
