@@ -21,7 +21,7 @@ const firebaseConfig = {
 let activeRef = null;
 let myPresenceRef = null;
 
-// Fungsi untuk mendapatkan informasi browser dan perangkat
+/// Fungsi untuk mendapatkan informasi browser dan perangkat
 function getBrowserInfo() {
     const ua = navigator.userAgent;
     let browser = "Unknown Browser";
@@ -35,7 +35,8 @@ function getBrowserInfo() {
     else if (ua.includes("Chrome")) browser = "Chrome";
     else if (ua.includes("Safari")) browser = "Safari";
 
-    if (/Mobi|Android|iPhone/i.test(ua)) device = "Mobile";
+    // Deteksi yang lebih akurat untuk perangkat mobile
+    if (/Mobi|Android|iPhone|iPod/i.test(ua)) device = "Mobile";
     else if (/Tablet|iPad/i.test(ua)) device = "Tablet";
 
     return { browser, device };
@@ -112,12 +113,12 @@ function updateCounterUI(count, devices = []) {
     if (listEl) {
         if (devices.length > 0) {
             listEl.innerHTML = devices.map(d => `
-                <div style="margin-bottom:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid rgba(255,255,255,0.1); font-size:12px;">
+                <div style="margin-bottom:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:8px; border:1px solid rgba(255,255,255,0.1); font-size:11px;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <strong style="color:#fff;">${d.device}</strong>
-                        <span style="font-size:10px; background:#3498db; color:white; padding:2px 8px; border-radius:10px;">${d.browser}</span>
+                        <span style="font-size:9px; background:#3498db; color:white; padding:1px 6px; border-radius:10px;">${d.browser}</span>
                     </div>
-                    <div style="color:#bdc3c7; margin-top:4px; font-size:11px;">📍 ${d.location || 'Unknown'}</div>
+                    <div style="color:#bdc3c7; margin-top:3px; font-size:10px;">📍 ${d.location || 'Unknown'}</div>
                 </div>
             `).join('');
             listEl.style.display = "block";
@@ -128,68 +129,84 @@ function updateCounterUI(count, devices = []) {
 }
 
 function injectCounterWidget() {
-    // Tambahkan CSS global untuk responsivitas dan animasi
+    const isMobile = window.innerWidth <= 768;
+    
     const style = document.createElement('style');
     style.innerHTML = `
-        @keyframes slideUp { from { transform: translateY(100%); opacity:0; } to { transform: translateY(0); opacity:1; } }
-        @keyframes slideInRight { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
-        
         .counter-widget {
-            position: fixed;
             background: rgba(44, 62, 80, 0.95);
             backdrop-filter: blur(10px);
             color: white;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            z-index: 999999;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            font-family: 'Segoe UI', sans-serif;
             border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.3s ease;
+            z-index: 9999;
         }
-
-        /* Desktop: Sidebar Kanan */
         @media (min-width: 769px) {
             .counter-widget {
+                position: fixed;
                 right: 20px;
                 top: 50%;
                 transform: translateY(-50%);
-                width: 280px;
+                width: 260px;
                 border-radius: 16px;
-                animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                animation: slideInRight 0.5s ease;
             }
         }
-
-        /* Mobile: Bottom Sheet */
         @media (max-width: 768px) {
             .counter-widget {
-                left: 0;
-                bottom: 0;
+                position: relative;
                 width: 100%;
-                border-radius: 20px 20px 0 0;
-                animation: slideUp 0.5s ease-out;
-                padding-bottom: 30px; /* Space for home indicator */
-            }
-            #device-list {
-                max-height: 150px;
-                overflow-y: auto;
+                max-width: 450px;
+                margin: 20px auto;
+                border-radius: 12px;
+                box-sizing: border-box;
             }
         }
-        
-        .presence-dot {
-            width: 12px; height: 12px; border-radius: 50%; background: #2ecc71;
-            box-shadow: 0 0 10px #2ecc71; animation: blink 2s infinite;
-        }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes slideInRight { from { transform: translate(100%, -50%); opacity:0; } to { transform: translate(0, -50%); opacity:1; } }
+        .presence-dot { width: 10px; height: 10px; border-radius: 50%; background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
     `;
     document.head.appendChild(style);
 
     const widget = document.createElement('div');
     widget.className = 'counter-widget';
+    widget.id = 'live-traffic-widget';
     widget.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <div style="display:flex; align-items:center; gap:12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:10px;">
                 <div class="presence-dot"></div>
-                <span style="font-size:10px; font-weight:bold; letter-spacing:1.5px; text-transform:uppercase; color:#bdc3c7;">Aktivitas Live</span>
+                <span style="font-size:10px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; color:#bdc3c7;">Aktivitas Real-time</span>
             </div>
-            <div style="text-align:right;">
-                <span id="active-devices" style="font-size:24px; font-weight:bold; color:#fff;">1</span>
+            <div>
+                <span id="active-devices" style="font-size:20px; font-weight:bold; color:#fff;">1</span>
+                <span style="font-size:10px; color:#bdc3c7; margin-left:3px;">Online</span>
+            </div>
+        </div>
+        <div id="device-list" style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px; display:none;"></div>
+    `;
+
+    // LOGIKA PENEMPATAN
+    if (!isMobile) {
+        // Desktop: Append ke body sebagai fixed sidebar
+        document.body.appendChild(widget);
+    } else {
+        // Mobile: Cari elemen navigasi cepat/tombol untuk ditaruh di bawahnya
+        const quickNav = document.querySelector('.quick-nav') || document.querySelector('.actions') || document.querySelector('.main-content');
+        if (quickNav) {
+            quickNav.parentNode.insertBefore(widget, quickNav.nextSibling);
+        } else {
+            document.body.appendChild(widget);
+        }
+    }
+    
+    const existing = document.querySelector('.live-card');
+    if (existing) existing.style.display = 'none';
+}
+
+function simulateLiveCounter() {
+    console.log("Menjalankan mode simulasi Live Counter...");
+    updateCounterUI(1, [{ device: "Desktop", browser: "Chrome", location: "Demo City, Indonesia" }]);
+}
+
+document.addEventListener('DOMContentLoaded', initCounter);
