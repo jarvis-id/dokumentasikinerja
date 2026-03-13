@@ -93,18 +93,29 @@ async function getEnhancedInfo() {
     return info;
 }
 
-// Fungsi untuk mendapatkan lokasi via IP API
+/// Fungsi untuk mendapatkan lokasi via IP API (dengan Koordinat)
 async function getLocation() {
     try {
         const response = await fetch('https://ipapi.co/json/');
         const data = await response.json();
-        return `${data.city}, ${data.country_name}`;
+        return {
+            text: `${data.city}, ${data.country_name}`,
+            lat: data.latitude,
+            lon: data.longitude
+        };
     } catch (e) {
-        return "Lokasi Tidak Diketahui";
+        return { text: "Lokasi Tidak Diketahui", lat: 0, lon: 0 };
     }
 }
 
 async function initCounter() {
+    // PEMBATASAN: Hanya jalan di halaman Home
+    const isHome = location.pathname === "/" || location.pathname.endsWith("index.html") || location.pathname.endsWith("/");
+    if (!isHome) {
+        console.log("Counter dinonaktifkan di halaman ini (Bukan Home).");
+        return;
+    }
+
     if (firebaseConfig.apiKey === "YOUR_API_KEY") {
         simulateLiveCounter();
         return;
@@ -119,7 +130,7 @@ async function initCounter() {
         activeRef = ref(db, 'presence');
 
         const info = await getEnhancedInfo();
-        const location = await getLocation();
+        const locationData = await getLocation();
 
         myPresenceRef = push(activeRef);
         onDisconnect(myPresenceRef).remove();
@@ -131,7 +142,9 @@ async function initCounter() {
             model: info.model,
             os: info.os,
             browser: info.browser,
-            location: location
+            location: locationData.text,
+            lat: locationData.lat,
+            lon: locationData.lon
         });
 
         onValue(activeRef, (snapshot) => {
@@ -176,10 +189,15 @@ function updateCounterUI(count, devices = []) {
     }
 
     if (listEl) {
+        window._activeDevices = devices; // Simpan ke global agar aman saat diklik
         if (devices.length > 0) {
-            listEl.innerHTML = `<strong>Rincian Perangkat:</strong><ul style="list-style:none; padding:0; margin:10px 0 0 0;">` +
-                devices.map(d => `
-                    <li style="margin-bottom:8px; padding:10px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:11px; border:1px solid rgba(0,0,0,0.05); color: #2c3e50;">
+            listEl.innerHTML = `<strong>Rincian Perangkat (Klik untuk Peta):</strong><ul style="list-style:none; padding:0; margin:10px 0 0 0;">` +
+                devices.map((d, index) => `
+                    <li onclick='openMapModalByIndex(${index})' 
+                        style="margin-bottom:8px; padding:10px; background:rgba(0,0,0,0.03); border-radius:8px; font-size:11px; border:1px solid rgba(0,0,0,0.05); color: #2c3e50; cursor:pointer; transition:all 0.2s;"
+                        onmouseover="this.style.background='rgba(52,152,219,0.1)'; this.style.borderColor='#3498db';"
+                        onmouseout="this.style.background='rgba(0,0,0,0.03)'; this.style.borderColor='rgba(0,0,0,0.05)';"
+                    >
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <strong>${d.brand || ''} ${d.model || d.device || 'Perangkat Online'}</strong>
                             <span style="font-size:9px; background:#3498db; color:white; padding:2px 8px; border-radius:10px;">${d.browser || 'Browser'}</span>
@@ -192,6 +210,95 @@ function updateCounterUI(count, devices = []) {
             listEl.style.display = "none";
         }
     }
+}
+
+// Fitur Peta Modal
+let mapInstance = null;
+function openMapModalByIndex(index) {
+    const device = window._activeDevices[index];
+    if (!device || !device.lat || !device.lon) {
+        alert("Koordinat lokasi tidak tersedia untuk perangkat ini.");
+        return;
+    }
+
+    injectMapStyles();
+    let modal = document.getElementById('traffic-map-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'traffic-map-modal';
+        modal.innerHTML = `
+            <div class="modal-bg" onclick="closeTrafficMap()"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span id="map-device-name">Detail Lokasi</span>
+                    <button onclick="closeTrafficMap()">✕</button>
+                </div>
+                <div id="traffic-map-container" style="height: 300px; background: #eee;"></div>
+                <div class="modal-footer" id="map-device-info"></div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    document.getElementById('map-device-name').innerText = `${device.brand || ''} ${device.model || device.device}`;
+    document.getElementById('map-device-info').innerText = `🌍 ${device.location} | 🔍 ${device.lat}, ${device.lon}`;
+    modal.style.display = 'flex';
+
+    // Load Leaflet jika belum ada
+    if (typeof L === 'undefined') {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = () => initLeafletMap(device.lat, device.lon);
+        document.head.appendChild(script);
+    } else {
+        initLeafletMap(device.lat, device.lon);
+    }
+}
+
+function initLeafletMap(lat, lon) {
+    if (mapInstance) mapInstance.remove();
+    
+    mapInstance = L.map('traffic-map-container').setView([lat, lon], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(mapInstance);
+    
+    L.marker([lat, lon]).addTo(mapInstance)
+        .bindPopup('Posisi Pengunjung')
+        .openPopup();
+}
+
+function closeTrafficMap() {
+    document.getElementById('traffic-map-modal').style.display = 'none';
+}
+
+function injectMapStyles() {
+    if (document.getElementById('map-modal-css')) return;
+    const style = document.createElement('style');
+    style.id = 'map-modal-css';
+    style.innerHTML = `
+        #traffic-map-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; align-items: center; justify-content: center; z-index: 1000000;
+        }
+        .modal-bg { position: absolute; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
+        .modal-content {
+            position: relative; width: 90%; max-width: 500px; background: white;
+            border-radius: 12px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header span { font-weight: bold; font-size: 14px; color: #2c3e50; }
+        .modal-header button { background: none; border: none; font-size: 20px; cursor: pointer; color: #95a5a6; }
+        .modal-footer { padding: 12px; font-size: 11px; color: #7f8c8d; background: #f9f9f9; text-align: center; }
+        @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    `;
+    document.head.appendChild(style);
 }
 
 function injectCounterWidget() {
@@ -232,8 +339,7 @@ function injectCounterWidget() {
 }
 
 function simulateLiveCounter() {
-    console.log("Menjalankan mode simulasi Live Counter...");
-    updateCounterUI(1, [{ device: "Desktop", browser: "Chrome", location: "Demo City, Indonesia" }]);
+    updateCounterUI(1, [{ device: "Desktop", brand: "Windows", model: "PC", browser: "Chrome", location: "Jakarta, Indonesia", lat: -6.2, lon: 106.81 }]);
 }
 
 document.addEventListener('DOMContentLoaded', initCounter);
