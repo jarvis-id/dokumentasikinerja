@@ -17,55 +17,19 @@ const Jarvis = {
                 this.updateBtnUI();
             }
         }
-
-        // --- Mobile Audio Autoplay Bypass Workaround ---
-        // Browser mobile butuh ada "user interaction" sebelum mau ngoceh.
-        const unlockAudio = () => {
-            if (this.synth && this.synth.state === 'suspended') {
-                this.synth.resume();
-            }
-            // Seringkali memanggil utterace kosongan memicu mesin
-            const silentUtterance = new SpeechSynthesisUtterance('');
-            silentUtterance.volume = 0;
-            this.synth.speak(silentUtterance);
-
-            // Lepas listener kalau sudah kena sentuh sekali
-            document.removeEventListener('click', unlockAudio);
-            document.removeEventListener('touchstart', unlockAudio);
-        };
-        
-        document.addEventListener('click', unlockAudio);
-        document.addEventListener('touchstart', unlockAudio);
-        // ------------------------------------------------
     },
 
     say: function (text) {
         if (this.isMuted || !this.synth) return;
         this.synth.cancel();
 
-        // Cancel previous utterances to avoid queuing issues on mobile
-        this.synth.cancel();
-
-        // Ensure engine is awake
-        if (this.synth.state === 'suspended') {
-            this.synth.resume();
-        }
-
         const utterance = new SpeechSynthesisUtterance(text);
-        
-        // Timeout workaround for Android Chrome bug where speech doesn't trigger immediately
-        setTimeout(() => {
-            const voices = this.synth.getVoices();
-            const idnVoice = voices.find(v => v.lang.includes('id-ID') || v.lang.includes('id_ID'));
-            if(idnVoice) utterance.voice = idnVoice;
+        utterance.lang = 'id-ID';
+        utterance.rate = 1.3;
+        utterance.pitch = 1.1;
+        utterance.volume = 1.0; // Max volume
 
-            utterance.lang = 'id-ID';
-            utterance.rate = 1.3;
-            utterance.pitch = 1.1;
-            utterance.volume = 1.0;
-
-            this.synth.speak(utterance);
-        }, 50);
+        this.synth.speak(utterance);
     },
 
     toggleMute: function () {
@@ -87,16 +51,6 @@ const Jarvis = {
         localStorage.setItem('jarvis_active', '1');
         this.isMuted = false;
         localStorage.setItem('jarvis_muted', 'false');
-
-        // Pastikan membongkar blokade audio engine iOS/Android saat tombol ditekan
-        if (this.synth && this.synth.state === 'suspended') {
-            this.synth.resume();
-        }
-        
-        // Pancing dengan string kosong yang di-resume
-        const dummy = new SpeechSynthesisUtterance('');
-        dummy.volume = 0;
-        this.synth.speak(dummy);
 
         this.say("Sistem aktif. Isi form.");
 

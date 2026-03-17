@@ -1,17 +1,6 @@
-async function updateUI() {
+function updateUI() {
     const fd = document.getElementById('f-date').value;
-    
-    // Auto-migrate localStorage array if exists
-    if (localStorage.getItem('lapdok_history')) {
-        const oldHistoryStr = await localforage.getItem('lapdok_history');
-        const oldHist = JSON.parse(oldHistoryStr || '[]');
-        const lsHist = JSON.parse(localStorage.getItem('lapdok_history'));
-        await localforage.setItem('lapdok_history', JSON.stringify([...oldHist, ...lsHist]));
-        localStorage.removeItem('lapdok_history');
-    }
-
-    const histStr = await localforage.getItem('lapdok_history');
-    let data = JSON.parse(histStr || '[]');
+    let data = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
     if(fd) data = data.filter(h => h.date === fd);
     data.sort((a,b) => b.id - a.id);
 
@@ -85,10 +74,9 @@ function updateBtn() {
     }
 }
 
-async function prepareContent() {
+function prepareContent() {
     const selectedIds = Array.from(document.querySelectorAll('.report-cb:checked')).map(cb => parseFloat(cb.value));
-    const histStr = await localforage.getItem('lapdok_history');
-    const allHistory = JSON.parse(histStr || '[]');
+    const allHistory = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
     const reports = allHistory.filter(h => selectedIds.includes(h.id));
     const target = document.getElementById('print-content-target');
     target.innerHTML = '';
@@ -137,7 +125,7 @@ async function prepareContent() {
     }
 }
 
-async function triggerPrint() { await prepareContent(); setTimeout(window.print, 500); }
+function triggerPrint() { prepareContent(); setTimeout(window.print, 500); }
 
 /**
  * Alur Baru: Simpan ID terpilih dan alihkan ke halaman Preview khusus PDF
@@ -159,41 +147,27 @@ function triggerPDF() {
     window.location.href = "print-preview.html";
 }
 
-async function restoreToEditor(id) {
-    const histStr = await localforage.getItem('lapdok_history');
-    const entry = JSON.parse(histStr || '[]').find(h => h.id === id);
-    if(entry) {
-        await localforage.setItem('lapdok_draft', JSON.stringify(entry.data));
-        await localforage.setItem('lapdok_edit_context', id);
-        window.location.href = "form.html";
-    }
+function restoreToEditor(id) {
+    const entry = JSON.parse(localStorage.getItem('lapdok_history')).find(h => h.id === id);
+    localStorage.setItem('lapdok_draft', JSON.stringify(entry.data));
+    localStorage.setItem('lapdok_edit_context', id);
+    window.location.href = "form.html";
 }
 
-async function deleteItem(e, id) { 
+function deleteItem(e, id) { 
     e.stopPropagation(); 
     if(confirm("Hapus laporan?")) { 
-        const histStr = await localforage.getItem('lapdok_history');
-        let h = JSON.parse(histStr || '[]'); 
-        await localforage.setItem('lapdok_history', JSON.stringify(h.filter(x=>x.id!==id))); 
+        let h = JSON.parse(localStorage.getItem('lapdok_history')); 
+        localStorage.setItem('lapdok_history', JSON.stringify(h.filter(x=>x.id!==id))); 
         updateUI(); 
         Jarvis.pandu('hapus');
     } 
 }
 
 // Gunakan DOMContentLoaded agar lebih cepat muncul dibanding window.onload
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
     console.log("PDF Engine Loaded. Checking database...");
-    
-    // Auto-migrate on load just in case
-    if (localStorage.getItem('lapdok_history')) {
-        const oldHistoryStr = await localforage.getItem('lapdok_history');
-        const oldHist = JSON.parse(oldHistoryStr || '[]');
-        const lsHist = JSON.parse(localStorage.getItem('lapdok_history'));
-        await localforage.setItem('lapdok_history', JSON.stringify([...oldHist, ...lsHist]));
-        localStorage.removeItem('lapdok_history');
-    }
-
-    const checkData = await localforage.getItem('lapdok_history');
+    const checkData = localStorage.getItem('lapdok_history');
     console.log("History found:", checkData ? JSON.parse(checkData).length : 0, "records");
     
     updateUI();

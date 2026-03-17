@@ -6,8 +6,7 @@ function activateAndHide() {
 let itemCount = 0, map, marker, activeInputId, activeAddrId, tempCoords;
 let cameraStream = null, activePreviewId = null, currentStage = null;
 let wmInterval = null;
-let editContextId = null;
-localforage.getItem('lapdok_edit_context').then(val => editContextId = val);
+let editContextId = localStorage.getItem('lapdok_edit_context') || null;
 
 function getWatermarkData(itemId) {
     const now = new Date();
@@ -252,7 +251,7 @@ function capturePhoto() {
     // Baru Terapkan Stempel
     applyWatermarkToCanvas(canvas, itemId);
 
-    document.getElementById(activePreviewId).innerHTML = `<img src="${canvas.toDataURL('image/jpeg', 0.6)}">`;
+    document.getElementById(activePreviewId).innerHTML = `<img src="${canvas.toDataURL('image/jpeg', 0.8)}">`;
     saveDraft(); closeCamera();
     handleAutoNextStep(currentStage);
 }
@@ -282,7 +281,7 @@ function processGalleryImg(input, p, stage) {
             c.height = h;
             c.getContext('2d').drawImage(img, 0, 0, w, h);
 
-            document.getElementById(p).innerHTML = `<img src="${c.toDataURL('image/jpeg', 0.6)}">`;
+            document.getElementById(p).innerHTML = `<img src="${c.toDataURL('image/jpeg', 0.8)}">`;
             saveDraft();
             handleAutoNextStep(stage);
         };
@@ -303,7 +302,7 @@ function closeCamera() {
     document.getElementById('cam-modal').style.display = 'none'; 
 }
 
-async function saveDraft() {
+function saveDraft() {
     const items = [];
     document.querySelectorAll('.job-item').forEach(item => {
         const id = item.id.split('-')[1];
@@ -317,19 +316,12 @@ async function saveDraft() {
             desc: document.getElementById(`ta-${id}`).value
         });
     });
-    await localforage.setItem('lapdok_draft', JSON.stringify(items));
+    localStorage.setItem('lapdok_draft', JSON.stringify(items));
 }
 
-async function loadDraft() {
+function loadDraft() {
     if (editContextId) document.getElementById('edit-banner').style.display = 'block';
-    
-    // Auto-migrate old localStorage data
-    if (localStorage.getItem('lapdok_draft')) {
-        await localforage.setItem('lapdok_draft', localStorage.getItem('lapdok_draft'));
-        localStorage.removeItem('lapdok_draft');
-    }
-
-    const saved = await localforage.getItem('lapdok_draft');
+    const saved = localStorage.getItem('lapdok_draft');
     if (!saved) { addNewJobItem(); return; }
     JSON.parse(saved).forEach((data, index) => {
         addNewJobItem();
@@ -345,38 +337,19 @@ async function loadDraft() {
     });
 }
 
-async function saveToHistory() {
-    const draftStr = await localforage.getItem('lapdok_draft');
-    const draft = JSON.parse(draftStr || '[]');
+function saveToHistory() {
+    const draft = JSON.parse(localStorage.getItem('lapdok_draft') || '[]');
     if (!draft.length || draft.some(i => !i.workDate)) return alert("Mohon isi minimal satu item!");
-    
-    // Migrate old history if exists
-    if (localStorage.getItem('lapdok_history')) {
-        const oldHistoryStr = await localforage.getItem('lapdok_history');
-        const oldHist = JSON.parse(oldHistoryStr || '[]');
-        const lsHist = JSON.parse(localStorage.getItem('lapdok_history'));
-        await localforage.setItem('lapdok_history', JSON.stringify([...oldHist, ...lsHist]));
-        localStorage.removeItem('lapdok_history');
-    }
-
-    const histStr = await localforage.getItem('lapdok_history');
-    let history = JSON.parse(histStr || '[]');
+    let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
     if (editContextId) history = history.filter(h => h.id !== parseFloat(editContextId));
     history.push({ id: Date.now(), date: draft[0].workDate, timestamp: formatIndoDate(draft[0].workDate), data: draft });
-    
-    await localforage.setItem('lapdok_history', JSON.stringify(history));
-    await localforage.removeItem('lapdok_draft');
-    if (editContextId) await localforage.removeItem('lapdok_edit_context');
-    
+    localStorage.setItem('lapdok_history', JSON.stringify(history));
+    localStorage.removeItem('lapdok_draft');
     alert("Berhasil disimpan!");
     Jarvis.pandu('selesai');
     location.href = "tampildata.html";
 }
 
-async function cancelEdit() { 
-    await localforage.removeItem('lapdok_draft'); 
-    await localforage.removeItem('lapdok_edit_context'); 
-    location.reload(); 
-}
+function cancelEdit() { localStorage.removeItem('lapdok_draft'); localStorage.removeItem('lapdok_edit_context'); location.reload(); }
 
 window.onload = () => { loadDraft(); };
