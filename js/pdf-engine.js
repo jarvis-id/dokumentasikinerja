@@ -25,7 +25,11 @@ async function updateUI() {
     const uniqueLegacy = legacyData.filter(h => !currentIds.includes(h.id));
     let combinedData = [...data, ...uniqueLegacy];
 
-    if(fd) combinedData = combinedData.filter(h => h.date === fd);
+    // Perbaikan filter tanggal khusus Mobile yang menangkap "string kosong" salah deteksi
+    if(fd && fd.trim() !== '') {
+        combinedData = combinedData.filter(h => h.date === fd);
+    }
+    
     combinedData.sort((a,b) => b.id - a.id);
 
     const listDiv = document.getElementById('history-list');
@@ -232,6 +236,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }, 500);
 });
+
+function debugStorage() {
+    let keys = [];
+    for(let i=0; i<localStorage.length; i++) {
+        keys.push(localStorage.key(i));
+    }
+    const history = localStorage.getItem('lapdok_history');
+    let size = history ? history.length : 0;
+    alert("Keys in localStorage: " + keys.join(", ") + "\nlapdok_history size: " + size);
+}
 
 async function exportData() {
     try {
