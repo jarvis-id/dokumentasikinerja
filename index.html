@@ -13,6 +13,9 @@
     <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
     <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
 
+    <!-- localForage (IndexedDB Wrapper) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+
     <!-- Script Jarvis & Counter -->
     <script src="js/jarvis.js"></script>
     <script src="js/realtime-counter.js"></script>
@@ -181,6 +184,32 @@
                 window.location.href = "pages/form.html";
             }
         }
+
+        // Data Rescue (Migration Script)
+        document.addEventListener('DOMContentLoaded', async () => {
+            const oldHistory = localStorage.getItem('lapdok_history');
+            if (oldHistory) {
+                try {
+                    const parsedOld = JSON.parse(oldHistory);
+                    if (parsedOld && parsedOld.length > 0) {
+                        const currentHistory = await localforage.getItem('lapdok_history') || [];
+                        // Merge without duplicate IDs
+                        const currentIds = currentHistory.map(h => h.id);
+                        const dataToMigrate = parsedOld.filter(h => !currentIds.includes(h.id));
+                        
+                        if (dataToMigrate.length > 0) {
+                            const newHistory = [...currentHistory, ...dataToMigrate];
+                            await localforage.setItem('lapdok_history', newHistory);
+                            console.log(`Berhasil menyelamatkan ${dataToMigrate.length} laporan lama ke IndexedDB.`);
+                        }
+                    }
+                    // We can optionally clear localStorage but safer to keep it as backup for now or clear it to save space
+                    // localStorage.removeItem('lapdok_history');
+                } catch (e) {
+                    console.error("Gagal migrasi rekam jejak lama:", e);
+                }
+            }
+        });
     </script>
 </body>
 </html>

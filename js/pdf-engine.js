@@ -1,6 +1,12 @@
-function updateUI() {
+async function updateUI() {
     const fd = document.getElementById('f-date').value;
-    let data = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
+    let rawData = await localforage.getItem('lapdok_history');
+    let data = [];
+    if (typeof rawData === 'string') {
+        try { data = JSON.parse(rawData); } catch(e) { data = []; }
+    } else if (Array.isArray(rawData)) {
+        data = rawData;
+    }
     if(fd) data = data.filter(h => h.date === fd);
     data.sort((a,b) => b.id - a.id);
 
@@ -74,9 +80,9 @@ function updateBtn() {
     }
 }
 
-function prepareContent() {
+async function prepareContent() {
     const selectedIds = Array.from(document.querySelectorAll('.report-cb:checked')).map(cb => parseFloat(cb.value));
-    const allHistory = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
+    const allHistory = await localforage.getItem('lapdok_history') || [];
     const reports = allHistory.filter(h => selectedIds.includes(h.id));
     const target = document.getElementById('print-content-target');
     target.innerHTML = '';
@@ -125,7 +131,7 @@ function prepareContent() {
     }
 }
 
-function triggerPrint() { prepareContent(); setTimeout(window.print, 500); }
+async function triggerPrint() { await prepareContent(); setTimeout(window.print, 500); }
 
 /**
  * Alur Baru: Simpan ID terpilih dan alihkan ke halaman Preview khusus PDF
@@ -147,30 +153,65 @@ function triggerPDF() {
     window.location.href = "print-preview.html";
 }
 
-function restoreToEditor(id) {
-    const entry = JSON.parse(localStorage.getItem('lapdok_history')).find(h => h.id === id);
-    localStorage.setItem('lapdok_draft', JSON.stringify(entry.data));
-    localStorage.setItem('lapdok_edit_context', id);
-    window.location.href = "form.html";
+async function restoreToEditor(id) {
+    const history = await localforage.getItem('lapdok_history') || [];
+    const entry = history.find(h => h.id === id);
+    if (entry) {
+        await localforage.setItem('lapdok_draft', entry.data);
+        await localforage.setItem('lapdok_edit_context', id);
+        window.location.href = "form.html";
+    }
 }
 
-function deleteItem(e, id) { 
+async function deleteItem(e, id) { 
     e.stopPropagation(); 
     if(confirm("Hapus laporan?")) { 
-        let h = JSON.parse(localStorage.getItem('lapdok_history')); 
-        localStorage.setItem('lapdok_history', JSON.stringify(h.filter(x=>x.id!==id))); 
-        updateUI(); 
+        let h = await localforage.getItem('lapdok_history') || []; 
+        await localforage.setItem('lapdok_history', h.filter(x=>x.id!==id)); 
+        await updateUI(); 
         Jarvis.pandu('hapus');
     } 
 }
 
 // Gunakan DOMContentLoaded agar lebih cepat muncul dibanding window.onload
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     console.log("PDF Engine Loaded. Checking database...");
-    const checkData = localStorage.getItem('lapdok_history');
-    console.log("History found:", checkData ? JSON.parse(checkData).length : 0, "records");
     
-    updateUI();
+    // --- SKRIP PENYELAMAT DATA ---
+    const oldHistory = localStorage.getItem('lapdok_history');
+    if (oldHistory) {
+        try {
+            const parsedOld = JSON.parse(oldHistory);
+            if (parsedOld && parsedOld.length > 0) {
+                let currentHistoryRaw = await localforage.getItem('lapdok_history');
+                let currentHistory = [];
+                if (typeof currentHistoryRaw === 'string') {
+                    try { currentHistory = JSON.parse(currentHistoryRaw); } catch(e) {}
+                } else if (Array.isArray(currentHistoryRaw)) {
+                    currentHistory = currentHistoryRaw;
+                }
+                
+                const currentIds = currentHistory.map(h => h.id);
+                const dataToMigrate = parsedOld.filter(h => !currentIds.includes(h.id));
+                if (dataToMigrate.length > 0) {
+                    await localforage.setItem('lapdok_history', [...currentHistory, ...dataToMigrate]);
+                    console.log(`[PDF Engine] Berhasil menyelamatkan ${dataToMigrate.length} laporan lama dari pages/ scope.`);
+                }
+            }
+        } catch(e) { console.error("Gagal migrasi rekam jejak:", e); }
+    }
+    // -----------------------------
+
+    const checkDataRaw = await localforage.getItem('lapdok_history');
+    let checkData = [];
+    if (typeof checkDataRaw === 'string') {
+        try { checkData = JSON.parse(checkDataRaw); } catch(e) {}
+    } else if (Array.isArray(checkDataRaw)) {
+        checkData = checkDataRaw;
+    }
+    console.log("History found:", checkData.length, "records");
+    
+    await updateUI();
     setTimeout(() => {
         if (document.querySelectorAll('.report-cb').length > 0) {
             Jarvis.pandu('pilih_cetak');

@@ -38,6 +38,7 @@
         /* Sembunyikan toolbar saat memproses PDF */
         @media print { .preview-toolbar { display: none; } }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 </head>
 <body>
 
@@ -63,7 +64,7 @@ async function loadPreview() {
         return;
     }
 
-    const allHistory = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
+    const allHistory = await localforage.getItem('lapdok_history') || [];
     const reports = allHistory.filter(h => selectedIds.includes(h.id));
     const target = document.getElementById('print-content-target');
     target.innerHTML = '';

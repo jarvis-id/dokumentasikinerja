@@ -6,7 +6,7 @@ function activateAndHide() {
 let itemCount = 0, map, marker, activeInputId, activeAddrId, tempCoords;
 let cameraStream = null, activePreviewId = null, currentStage = null;
 let wmInterval = null;
-let editContextId = localStorage.getItem('lapdok_edit_context') || null;
+let editContextId = null;
 
 function getWatermarkData(itemId) {
     const now = new Date();
@@ -302,7 +302,7 @@ function closeCamera() {
     document.getElementById('cam-modal').style.display = 'none'; 
 }
 
-function saveDraft() {
+async function saveDraft() {
     const items = [];
     document.querySelectorAll('.job-item').forEach(item => {
         const id = item.id.split('-')[1];
@@ -316,14 +316,15 @@ function saveDraft() {
             desc: document.getElementById(`ta-${id}`).value
         });
     });
-    localStorage.setItem('lapdok_draft', JSON.stringify(items));
+    await localforage.setItem('lapdok_draft', items);
 }
 
-function loadDraft() {
+async function loadDraft() {
+    editContextId = await localforage.getItem('lapdok_edit_context');
     if (editContextId) document.getElementById('edit-banner').style.display = 'block';
-    const saved = localStorage.getItem('lapdok_draft');
-    if (!saved) { addNewJobItem(); return; }
-    JSON.parse(saved).forEach((data, index) => {
+    const saved = await localforage.getItem('lapdok_draft');
+    if (!saved || saved.length === 0) { addNewJobItem(); return; }
+    saved.forEach((data, index) => {
         addNewJobItem();
         const id = index + 1;
         document.getElementById(`date-in-${id}`).value = data.workDate || "";
@@ -337,19 +338,56 @@ function loadDraft() {
     });
 }
 
-function saveToHistory() {
-    const draft = JSON.parse(localStorage.getItem('lapdok_draft') || '[]');
+async function saveToHistory() {
+    const draft = await localforage.getItem('lapdok_draft') || [];
     if (!draft.length || draft.some(i => !i.workDate)) return alert("Mohon isi minimal satu item!");
-    let history = JSON.parse(localStorage.getItem('lapdok_history') || '[]');
+    let historyRaw = await localforage.getItem('lapdok_history');
+    let history = [];
+    if (typeof historyRaw === 'string') {
+        try { history = JSON.parse(historyRaw); } catch(e) {}
+    } else if (Array.isArray(historyRaw)) {
+        history = historyRaw;
+    }
     if (editContextId) history = history.filter(h => h.id !== parseFloat(editContextId));
     history.push({ id: Date.now(), date: draft[0].workDate, timestamp: formatIndoDate(draft[0].workDate), data: draft });
-    localStorage.setItem('lapdok_history', JSON.stringify(history));
-    localStorage.removeItem('lapdok_draft');
+    await localforage.setItem('lapdok_history', history);
+    await localforage.removeItem('lapdok_draft');
+    await localforage.removeItem('lapdok_edit_context');
     alert("Berhasil disimpan!");
     Jarvis.pandu('selesai');
     location.href = "tampildata.html";
 }
 
-function cancelEdit() { localStorage.removeItem('lapdok_draft'); localStorage.removeItem('lapdok_edit_context'); location.reload(); }
+async function cancelEdit() { 
+    await localforage.removeItem('lapdok_draft'); 
+    await localforage.removeItem('lapdok_edit_context'); 
+    location.reload(); 
+}
 
-window.onload = () => { loadDraft(); };
+window.onload = async () => { 
+    // --- SKRIP PENYELAMAT DATA ---
+    const oldHistory = localStorage.getItem('lapdok_history');
+    if (oldHistory) {
+        try {
+            const parsedOld = JSON.parse(oldHistory);
+            if (parsedOld && parsedOld.length > 0) {
+                let currentHistoryRaw = await localforage.getItem('lapdok_history');
+                let currentHistory = [];
+                if (typeof currentHistoryRaw === 'string') {
+                    try { currentHistory = JSON.parse(currentHistoryRaw); } catch(e) {}
+                } else if (Array.isArray(currentHistoryRaw)) {
+                    currentHistory = currentHistoryRaw;
+                }
+
+                const currentIds = currentHistory.map(h => h.id);
+                const dataToMigrate = parsedOld.filter(h => !currentIds.includes(h.id));
+                if (dataToMigrate.length > 0) {
+                    await localforage.setItem('lapdok_history', [...currentHistory, ...dataToMigrate]);
+                    console.log(`[Form Handler] Berhasil menyelamatkan ${dataToMigrate.length} laporan lama dari pages/ scope.`);
+                }
+            }
+        } catch(e) { console.error("Gagal migrasi rekam jejak:", e); }
+    }
+    // -----------------------------
+    await loadDraft(); 
+};
