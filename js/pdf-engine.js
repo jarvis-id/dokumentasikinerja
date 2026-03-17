@@ -25,11 +25,12 @@ async function updateUI() {
     const uniqueLegacy = legacyData.filter(h => !currentIds.includes(h.id));
     let combinedData = [...data, ...uniqueLegacy];
 
-    // Perbaikan filter tanggal khusus Mobile yang menangkap "string kosong" salah deteksi
-    if(fd && fd.trim() !== '') {
+    // Perbaikan filter tanggal: tampilkan semua jika input kosong (Reset)
+    if (fd && fd.trim() !== '') {
         combinedData = combinedData.filter(h => h.date === fd);
     }
     
+    // Urutan: Terbaru di Atas (Newest First) sesuai koreksi pengguna
     combinedData.sort((a,b) => b.id - a.id);
 
     const listDiv = document.getElementById('history-list');
