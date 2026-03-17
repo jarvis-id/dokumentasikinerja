@@ -25,7 +25,10 @@
 <div class="container">
     <div class="filter-card">
         <label style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 5px;">FILTER TANGGAL:</label>
-        <input type="date" id="f-date" onchange="updateUI()" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; margin-bottom: 10px;">
+        <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+            <input type="date" id="f-date" onchange="updateUI()" style="flex: 1; padding:10px; border:1px solid #ddd; border-radius:6px;">
+            <button onclick="document.getElementById('f-date').value=''; updateUI()" style="background: #e74c3c; color: white; border: none; border-radius: 6px; padding: 0 15px; font-weight: bold; cursor: pointer;">Reset</button>
+        </div>
         <button class="btn-action btn-print" id="print-btn" onclick="triggerPrint()" disabled>🖨️ Cetak Terpilih (0)</button>
         <button class="btn-action btn-download" id="wa-btn" onclick="triggerPDF()" disabled>💾 Download File (PDF) (0)</button>
     </div>
