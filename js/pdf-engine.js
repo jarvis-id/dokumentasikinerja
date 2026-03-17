@@ -208,8 +208,25 @@ async function restoreToEditor(id) {
 async function deleteItem(e, id) { 
     e.stopPropagation(); 
     if(confirm("Hapus laporan?")) { 
+        // 1. Hapus dari IndexedDB (Data baru)
         let h = await localforage.getItem('lapdok_history') || []; 
         await localforage.setItem('lapdok_history', h.filter(x=>x.id!==id)); 
+
+        // 2. Hapus dari localStorage (Data lama/legacy)
+        const oldHistory = localStorage.getItem('lapdok_history');
+        if (oldHistory) {
+            try {
+                let parsedOld = JSON.parse(oldHistory);
+                if (Array.isArray(parsedOld)) {
+                    const newLegacy = parsedOld.filter(x => x.id !== id);
+                    if (newLegacy.length !== parsedOld.length) {
+                        localStorage.setItem('lapdok_history', JSON.stringify(newLegacy));
+                        console.log(`[PDF Engine] Laporan legacy ID ${id} berhasil dihapus dari localStorage.`);
+                    }
+                }
+            } catch(e) {}
+        }
+
         await updateUI(); 
         Jarvis.pandu('hapus');
     } 
