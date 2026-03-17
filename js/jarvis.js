@@ -43,24 +43,29 @@ const Jarvis = {
         if (this.isMuted || !this.synth) return;
         this.synth.cancel();
 
-        // Mobile browsers sometimes pause speech synthesis silently
+        // Cancel previous utterances to avoid queuing issues on mobile
+        this.synth.cancel();
+
+        // Ensure engine is awake
         if (this.synth.state === 'suspended') {
             this.synth.resume();
         }
 
         const utterance = new SpeechSynthesisUtterance(text);
         
-        // Coba temukan voice native Indonesia jika belum diterapkan
-        const voices = this.synth.getVoices();
-        const idnVoice = voices.find(v => v.lang.includes('id-ID') || v.lang.includes('id_ID'));
-        if(idnVoice) utterance.voice = idnVoice;
+        // Timeout workaround for Android Chrome bug where speech doesn't trigger immediately
+        setTimeout(() => {
+            const voices = this.synth.getVoices();
+            const idnVoice = voices.find(v => v.lang.includes('id-ID') || v.lang.includes('id_ID'));
+            if(idnVoice) utterance.voice = idnVoice;
 
-        utterance.lang = 'id-ID';
-        utterance.rate = 1.3;
-        utterance.pitch = 1.1;
-        utterance.volume = 1.0; // Max volume
+            utterance.lang = 'id-ID';
+            utterance.rate = 1.3;
+            utterance.pitch = 1.1;
+            utterance.volume = 1.0;
 
-        this.synth.speak(utterance);
+            this.synth.speak(utterance);
+        }, 50);
     },
 
     toggleMute: function () {
@@ -82,6 +87,16 @@ const Jarvis = {
         localStorage.setItem('jarvis_active', '1');
         this.isMuted = false;
         localStorage.setItem('jarvis_muted', 'false');
+
+        // Pastikan membongkar blokade audio engine iOS/Android saat tombol ditekan
+        if (this.synth && this.synth.state === 'suspended') {
+            this.synth.resume();
+        }
+        
+        // Pancing dengan string kosong yang di-resume
+        const dummy = new SpeechSynthesisUtterance('');
+        dummy.volume = 0;
+        this.synth.speak(dummy);
 
         this.say("Sistem aktif. Isi form.");
 
