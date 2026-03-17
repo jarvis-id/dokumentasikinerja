@@ -1,5 +1,7 @@
 async function updateUI() {
     const fd = document.getElementById('f-date').value;
+    
+    // Ambil data baru dari IndexedDB
     let rawData = await localforage.getItem('lapdok_history');
     let data = [];
     if (typeof rawData === 'string') {
@@ -7,13 +9,29 @@ async function updateUI() {
     } else if (Array.isArray(rawData)) {
         data = rawData;
     }
-    if(fd) data = data.filter(h => h.date === fd);
-    data.sort((a,b) => b.id - a.id);
+
+    // Ambil data warisan (legacy) dari localStorage HANYA UNTUK DITAMPILKAN
+    let legacyData = [];
+    const oldHistory = localStorage.getItem('lapdok_history');
+    if (oldHistory) {
+        try {
+            const parsedOld = JSON.parse(oldHistory);
+            if (Array.isArray(parsedOld)) legacyData = parsedOld;
+        } catch(e) {}
+    }
+
+    // Gabungkan keduanya sementara untuk UI (Mencegah duplikat ID)
+    const currentIds = data.map(h => h.id);
+    const uniqueLegacy = legacyData.filter(h => !currentIds.includes(h.id));
+    let combinedData = [...data, ...uniqueLegacy];
+
+    if(fd) combinedData = combinedData.filter(h => h.date === fd);
+    combinedData.sort((a,b) => b.id - a.id);
 
     const listDiv = document.getElementById('history-list');
     let html = '';
     
-    data.forEach((h, index) => {
+    combinedData.forEach((h, index) => {
         const firstItem = h.data[0] || {};
         const thumb = firstItem.p3 || firstItem.p2 || firstItem.p1 || null;
         
@@ -82,8 +100,19 @@ function updateBtn() {
 
 async function prepareContent() {
     const selectedIds = Array.from(document.querySelectorAll('.report-cb:checked')).map(cb => parseFloat(cb.value));
-    const allHistory = await localforage.getItem('lapdok_history') || [];
-    const reports = allHistory.filter(h => selectedIds.includes(h.id));
+    
+    const rawData = await localforage.getItem('lapdok_history');
+    let dbHistory = Array.isArray(rawData) ? rawData : (typeof rawData === 'string' ? JSON.parse(rawData || '[]') : []);
+    
+    let legacyData = [];
+    const oldHistory = localStorage.getItem('lapdok_history');
+    if (oldHistory) try { legacyData = JSON.parse(oldHistory); if(!Array.isArray(legacyData)) legacyData = []; } catch(e){}
+
+    const currentIds = dbHistory.map(h => h.id);
+    const uniqueLegacy = legacyData.filter(h => !currentIds.includes(h.id));
+    const combinedHistory = [...dbHistory, ...uniqueLegacy];
+
+    const reports = combinedHistory.filter(h => selectedIds.includes(h.id));
     const target = document.getElementById('print-content-target');
     target.innerHTML = '';
     
@@ -154,8 +183,16 @@ function triggerPDF() {
 }
 
 async function restoreToEditor(id) {
-    const history = await localforage.getItem('lapdok_history') || [];
-    const entry = history.find(h => h.id === id);
+    const rawData = await localforage.getItem('lapdok_history');
+    let dbHistory = Array.isArray(rawData) ? rawData : (typeof rawData === 'string' ? JSON.parse(rawData || '[]') : []);
+    
+    let legacyData = [];
+    const oldHistory = localStorage.getItem('lapdok_history');
+    if (oldHistory) try { legacyData = JSON.parse(oldHistory); if(!Array.isArray(legacyData)) legacyData = []; } catch(e){}
+
+    const combinedHistory = [...dbHistory, ...legacyData];
+    const entry = combinedHistory.find(h => h.id === id);
+    
     if (entry) {
         await localforage.setItem('lapdok_draft', entry.data);
         await localforage.setItem('lapdok_edit_context', id);
@@ -176,32 +213,9 @@ async function deleteItem(e, id) {
 // Gunakan DOMContentLoaded agar lebih cepat muncul dibanding window.onload
 document.addEventListener('DOMContentLoaded', async () => {
     console.log("PDF Engine Loaded. Checking database...");
+    // Migrasi otomatis ke database dimatikan permanen berdasarkan request pengguna.
+    // Data lama hanya akan di-render sebagai penggabungan visual di UI saja.
     
-    // --- SKRIP PENYELAMAT DATA ---
-    const oldHistory = localStorage.getItem('lapdok_history');
-    if (oldHistory) {
-        try {
-            const parsedOld = JSON.parse(oldHistory);
-            if (parsedOld && parsedOld.length > 0) {
-                let currentHistoryRaw = await localforage.getItem('lapdok_history');
-                let currentHistory = [];
-                if (typeof currentHistoryRaw === 'string') {
-                    try { currentHistory = JSON.parse(currentHistoryRaw); } catch(e) {}
-                } else if (Array.isArray(currentHistoryRaw)) {
-                    currentHistory = currentHistoryRaw;
-                }
-                
-                const currentIds = currentHistory.map(h => h.id);
-                const dataToMigrate = parsedOld.filter(h => !currentIds.includes(h.id));
-                if (dataToMigrate.length > 0) {
-                    await localforage.setItem('lapdok_history', [...currentHistory, ...dataToMigrate]);
-                    console.log(`[PDF Engine] Berhasil menyelamatkan ${dataToMigrate.length} laporan lama dari pages/ scope.`);
-                }
-            }
-        } catch(e) { console.error("Gagal migrasi rekam jejak:", e); }
-    }
-    // -----------------------------
-
     const checkDataRaw = await localforage.getItem('lapdok_history');
     let checkData = [];
     if (typeof checkDataRaw === 'string') {
@@ -209,7 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else if (Array.isArray(checkDataRaw)) {
         checkData = checkDataRaw;
     }
-    console.log("History found:", checkData.length, "records");
+    console.log("IndexedDB History found:", checkData.length, "records");
     
     await updateUI();
     setTimeout(() => {
@@ -218,3 +232,63 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }, 500);
 });
+
+async function exportData() {
+    try {
+        const history = await localforage.getItem('lapdok_history') || [];
+        if (history.length === 0) return alert("Tidak ada data untuk diekspor.");
+        
+        const dataStr = JSON.stringify(history);
+        const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+        
+        const exportFileDefaultName = `LapDok_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+        
+        let linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+        Jarvis.pandu('selesai');
+    } catch(e) {
+        alert("Gagal mengekspor data.");
+        console.error(e);
+    }
+}
+
+async function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const importedData = JSON.parse(e.target.result);
+            if (!Array.isArray(importedData)) throw new Error("Format tidak valid.");
+            
+            const currentHistoryRaw = await localforage.getItem('lapdok_history');
+            let currentHistory = [];
+            if (typeof currentHistoryRaw === 'string') {
+                try { currentHistory = JSON.parse(currentHistoryRaw); } catch(err) {}
+            } else if (Array.isArray(currentHistoryRaw)) {
+                currentHistory = currentHistoryRaw;
+            }
+
+            // Gabungkan tanpa duplikat ID
+            const currentIds = currentHistory.map(h => h.id);
+            const dataToMigrate = importedData.filter(h => !currentIds.includes(h.id));
+            
+            if (dataToMigrate.length > 0) {
+                await localforage.setItem('lapdok_history', [...currentHistory, ...dataToMigrate]);
+                alert(`Berhasil memulihkan ${dataToMigrate.length} laporan baru!`);
+                await updateUI();
+            } else {
+                alert("Semua data dalam file backup ini sudah ada di dalam aplikasi.");
+            }
+        } catch (err) {
+            alert("File backup tidak valid atau rusak.");
+            console.error(err);
+        }
+        // Bersihkan input file
+        document.getElementById('import-file').value = '';
+    };
+    reader.readAsText(file);
+}
