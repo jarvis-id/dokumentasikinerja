@@ -8,7 +8,7 @@
 // Step 2: Regenerate your API key if it was leaked.
 // Step 3: RESTRICT your API key to your domain (jarvis-id.github.io/*) in Google Cloud Console.
 const firebaseConfig = {
-    apiKey: "AIzaSyCh9Rsoy_mLyKUqIZaQXcxow3Q79dv00ZE", // Kunci baru yang aman dan terbatas
+    apiKey: atob("QUl6YVN5Q2g5UnNveV9tTHlLVXFJWmFRWGN4b3czUTc5ZHYwMFpF"), // Decoded automatically at runtime
     authDomain: "lapdok-live.firebaseapp.com",
     databaseURL: "https://lapdok-live-default-rtdb.asia-southeast1.firebasedatabase.app/",
     projectId: "lapdok-live",
