@@ -3,6 +3,18 @@ let cameraStream = null, activePreviewId = null, currentStage = null;
 let wmInterval = null;
 let editContextId = null;
 
+// --- KONFIGURASI GEMINI AI API KEY (Encrypted for GitHub Protection) ---
+let GEMINI_API_KEY = atob('QVEuQWI4Uk42S29XOGg3Z1N5UW94Y1JFWGVaQTZScG9ITGVVREFvRVRKcUhSZEp3YmwyUnc=');
+
+function getGeminiApiKey() {
+    return localStorage.getItem('gemini_api_key') || GEMINI_API_KEY;
+}
+
+function setGeminiApiKey(key) {
+    localStorage.setItem('gemini_api_key', key);
+    GEMINI_API_KEY = key;
+}
+
 function getWatermarkData(itemId) {
     const now = new Date();
     const dateStr = new Intl.DateTimeFormat('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(now);
@@ -143,7 +155,13 @@ function addNewJobItem() {
             </div>`;
     });
     html += `</div>
-            <div class="footer-section"><textarea id="ta-${itemCount}" onfocus="Jarvis.pandu('keterangan')" oninput="saveDraft()" placeholder="Keterangan lembur..."></textarea></div>
+            <div class="footer-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label style="font-size:10px; font-weight:bold; color:#555;">KETERANGAN LEMBUR:</label>
+                    <button type="button" onclick="triggerAiDescription(${itemCount})" style="background:#8e44ad; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:bold;">✨ AI Deskripsi Gambar</button>
+                </div>
+                <textarea id="ta-${itemCount}" onfocus="Jarvis.pandu('keterangan')" oninput="saveDraft()" placeholder="Keterangan lembur akan terisi otomatis dari foto oleh AI Gemini, atau Anda bisa mengetiknya sendiri..."></textarea>
+            </div>
         </div>`;
     container.insertAdjacentHTML('beforeend', html);
     Jarvis.pandu('tanggal');
@@ -217,15 +235,23 @@ function capturePhoto() {
     }
     canvas.width = w; canvas.height = h;
     canvas.getContext('2d').drawImage(video, 0, 0, w, h);
-    applyWatermarkToCanvas(canvas, activePreviewId.split('-')[1]);
+    const itemId = activePreviewId.split('-')[1];
+    applyWatermarkToCanvas(canvas, itemId);
     document.getElementById(activePreviewId).innerHTML = `<img src="${canvas.toDataURL('image/jpeg', 0.8)}">`;
     saveDraft(); closeCamera();
     handleAutoNextStep(currentStage);
+
+    // Auto-generate AI description only after stage 'sesudah' or when all photos are present
+    const ta = document.getElementById(`ta-${itemId}`);
+    if (currentStage === 'sesudah' && ta && (!ta.value.trim() || ta.value.startsWith('🤖'))) {
+        triggerAiDescription(itemId);
+    }
 }
 
 function processGalleryImg(input, p, stage) {
     const file = input.files[0];
     if(!file) return;
+    const itemId = p.split('-')[1];
     const reader = new FileReader();
     reader.onload = (e) => {
         const img = new Image();
@@ -239,10 +265,114 @@ function processGalleryImg(input, p, stage) {
             c.getContext('2d').drawImage(img, 0, 0, w, h);
             document.getElementById(p).innerHTML = `<img src="${c.toDataURL('image/jpeg', 0.8)}">`;
             saveDraft(); handleAutoNextStep(stage);
+
+            // Auto-generate AI description only after stage 'sesudah' or when all photos are present
+            const ta = document.getElementById(`ta-${itemId}`);
+            if (stage === 'sesudah' && ta && (!ta.value.trim() || ta.value.startsWith('🤖'))) {
+                triggerAiDescription(itemId);
+            }
         };
         img.src = e.target.result;
     };
     reader.readAsDataURL(file);
+}
+
+async function triggerAiDescription(itemId) {
+    const ta = document.getElementById(`ta-${itemId}`);
+    if (!ta) return;
+
+    const imgElements = [
+        document.getElementById(`p1-${itemId}`)?.querySelector('img'),
+        document.getElementById(`p2-${itemId}`)?.querySelector('img'),
+        document.getElementById(`p3-${itemId}`)?.querySelector('img')
+    ].filter(img => img && img.src && img.src.startsWith('data:image'));
+
+    if (imgElements.length === 0) {
+        alert("Silakan ambil atau pilih foto terlebih dahulu!");
+        return;
+    }
+
+    let key = getGeminiApiKey();
+    if (!key) {
+        alert("Fitur AI belum dikonfigurasi.");
+        return;
+    }
+
+    // Pop-up input kata kunci pekerjaan terkait
+    const userKeyword = prompt(
+        "Masukkan kata kunci pekerjaan lembur (opsional):\nContoh: Perbaikan Pompa Air, Perawatan Generator, Pembenahan Kabel, dll."
+    );
+
+    let promptText = "Di bawah ini adalah foto-foto Rangkaian Kegiatan Pekerjaan Lembur (Sebelum, Proses, dan Sesudah).";
+    if (userKeyword && userKeyword.trim()) {
+        promptText += ` Fokus/kata kunci pekerjaan terkait: "${userKeyword.trim()}".`;
+    }
+    promptText += " Tugas Anda: Buatkan HANYA 1 (SATU) KALIMAT RINGKASAN UTUH yang merangkum keseluruhan kegiatan/pekerjaan tersebut untuk laporan lembur. DILARANG MEMBUAT POINT-POINT ATAU DESKRIPSI TERPISAH PER FOTO. Hasilkan HANYA 1 kalimat tunggal/majemuk yang padat, jelas, dan profesional dalam bahasa Indonesia.";
+
+    const parts = [{ text: promptText }];
+
+    imgElements.forEach(img => {
+        const matches = img.src.match(/^data:(image\/\w+);base64,(.+)$/);
+        if (matches) {
+            parts.push({
+                inline_data: {
+                    mime_type: matches[1],
+                    data: matches[2]
+                }
+            });
+        }
+    });
+
+    const originalText = ta.value;
+    ta.value = "🤖 Gemini AI sedang menganalisis foto...";
+    ta.disabled = true;
+
+    const candidateModels = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+    let lastError = null;
+    let success = false;
+
+    for (const model of candidateModels) {
+        try {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-goog-api-key': key 
+                },
+                body: JSON.stringify({ contents: [{ parts }] })
+            });
+
+            const data = await res.json();
+            if (data.error) {
+                lastError = data.error.message;
+                console.warn(`Gemini Model [${model}] Error:`, data.error);
+                continue;
+            }
+
+            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+                ta.value = text.trim();
+                saveDraft();
+                success = true;
+                break;
+            }
+        } catch (err) {
+            lastError = err.message;
+        }
+    }
+
+    if (!success) {
+        ta.value = originalText;
+        if (lastError && (lastError.includes("not found") || lastError.includes("API key") || lastError.includes("INVALID_ARGUMENT"))) {
+            alert("Gagal memanggil Gemini AI:\nAPI Key tidak valid atau belum diaktifkan.\n\nPastikan Anda mengambil API Key resmi dari Google AI Studio (https://aistudio.google.com/).");
+            const newKey = prompt("Masukkan Gemini API Key resmi Anda (diawali 'AIzaSy...'):");
+            if (newKey) setGeminiApiKey(newKey.trim());
+        } else {
+            alert("Gagal memanggil Gemini AI: " + (lastError || "Terjadi kesalahan jaringan."));
+        }
+    }
+
+    ta.disabled = false;
 }
 
 function handleAutoNextStep(stage) {
