@@ -11,6 +11,7 @@
     <!-- Leaflet JS (Peta) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="../js/image-compressor.js"></script>
 
     <style>
         /* Gaya Dasar */
@@ -286,10 +287,23 @@
     function capturePhoto() {
         const video = document.getElementById('cam-video');
         const canvas = document.createElement('canvas');
-        canvas.width = 800; canvas.height = 600;
+        const MAX_DIM = 1000;
+        let w = video.videoWidth || 800, h = video.videoHeight || 600;
+        if (w > MAX_DIM || h > MAX_DIM) {
+            if (w > h) { h = Math.floor(h * (MAX_DIM / w)); w = MAX_DIM; }
+            else { w = Math.floor(w * (MAX_DIM / h)); h = MAX_DIM; }
+        }
+        canvas.width = w; canvas.height = h;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, 800, 600);
-        document.getElementById(activePreviewId).innerHTML = `<img src="${canvas.toDataURL('image/jpeg', 0.8)}">`;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(video, 0, 0, w, h);
+
+        const compressedDataUrl = (typeof SmartCompressor !== 'undefined') 
+            ? SmartCompressor.compressCanvas(canvas, 1000, 0.75) 
+            : canvas.toDataURL('image/jpeg', 0.8);
+
+        document.getElementById(activePreviewId).innerHTML = `<img src="${compressedDataUrl}">`;
         saveDraft(); closeCamera();
     }
 
@@ -301,19 +315,35 @@
     function processGalleryImg(input, p) {
         const file = input.files[0];
         if(!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const c = document.createElement('canvas');
-                c.width = 800; c.height = 600;
-                c.getContext('2d').drawImage(img, 0, 0, 800, 600);
-                document.getElementById(p).innerHTML = `<img src="${c.toDataURL('image/jpeg', 0.8)}">`;
+        if (typeof SmartCompressor !== 'undefined') {
+            SmartCompressor.compressImageFile(file, 1000, 0.75).then(res => {
+                document.getElementById(p).innerHTML = `<img src="${res.dataUrl}">`;
                 saveDraft();
+            }).catch(err => {
+                console.error("Kompresi galeri gagal:", err);
+            });
+        } else {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const c = document.createElement('canvas');
+                    const maxDim = 1000;
+                    let w = img.width, h = img.height;
+                    if (w > h) { if (w > maxDim) { h *= maxDim / w; w = maxDim; } }
+                    else { if (h > maxDim) { w *= maxDim / h; h = maxDim; } }
+                    c.width = w; c.height = h;
+                    const ctx = c.getContext('2d');
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, w, h);
+                    document.getElementById(p).innerHTML = `<img src="${c.toDataURL('image/jpeg', 0.8)}">`;
+                    saveDraft();
+                };
+                img.src = e.target.result;
             };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+            reader.readAsDataURL(file);
+        }
     }
 
     function cancelEdit() { 

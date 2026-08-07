@@ -227,17 +227,26 @@ async function openCustomCamera(p, stage) {
 function capturePhoto() {
     const video = document.getElementById('cam-video');
     const canvas = document.createElement('canvas');
-    const MAX_DIM = 1200;
+    const MAX_DIM = 1000;
     let w = video.videoWidth, h = video.videoHeight;
     if (w > MAX_DIM || h > MAX_DIM) {
         if (w > h) { h = Math.floor(h * (MAX_DIM / w)); w = MAX_DIM; }
         else { w = Math.floor(w * (MAX_DIM / h)); h = MAX_DIM; }
     }
     canvas.width = w; canvas.height = h;
-    canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(video, 0, 0, w, h);
+    
     const itemId = activePreviewId.split('-')[1];
     applyWatermarkToCanvas(canvas, itemId);
-    document.getElementById(activePreviewId).innerHTML = `<img src="${canvas.toDataURL('image/jpeg', 0.8)}">`;
+
+    const compressedDataUrl = (typeof SmartCompressor !== 'undefined') 
+        ? SmartCompressor.compressCanvas(canvas, 1000, 0.75) 
+        : canvas.toDataURL('image/jpeg', 0.8);
+
+    document.getElementById(activePreviewId).innerHTML = `<img src="${compressedDataUrl}">`;
     saveDraft(); closeCamera();
     handleAutoNextStep(currentStage);
 
@@ -252,29 +261,51 @@ function processGalleryImg(input, p, stage) {
     const file = input.files[0];
     if(!file) return;
     const itemId = p.split('-')[1];
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-            const c = document.createElement('canvas');
-            const maxDim = 800;
-            let w = img.width, h = img.height;
-            if (w > h) { if (w > maxDim) { h *= maxDim / w; w = maxDim; } }
-            else { if (h > maxDim) { w *= maxDim / h; h = maxDim; } }
-            c.width = w; c.height = h;
-            c.getContext('2d').drawImage(img, 0, 0, w, h);
-            document.getElementById(p).innerHTML = `<img src="${c.toDataURL('image/jpeg', 0.8)}">`;
+    
+    if (typeof SmartCompressor !== 'undefined') {
+        SmartCompressor.compressImageFile(file, 1000, 0.75).then(res => {
+            const c = res.canvas;
+            applyWatermarkToCanvas(c, itemId);
+            const compressedDataUrl = SmartCompressor.compressCanvas(c, 1000, 0.75);
+            document.getElementById(p).innerHTML = `<img src="${compressedDataUrl}">`;
             saveDraft(); handleAutoNextStep(stage);
 
-            // Auto-generate AI description only after stage 'sesudah' or when all photos are present
             const ta = document.getElementById(`ta-${itemId}`);
             if (stage === 'sesudah' && ta && (!ta.value.trim() || ta.value.startsWith('🤖'))) {
                 triggerAiDescription(itemId);
             }
+        }).catch(err => {
+            console.error("Kompresi galeri gagal:", err);
+        });
+    } else {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const c = document.createElement('canvas');
+                const maxDim = 1000;
+                let w = img.width, h = img.height;
+                if (w > h) { if (w > maxDim) { h *= maxDim / w; w = maxDim; } }
+                else { if (h > maxDim) { w *= maxDim / h; h = maxDim; } }
+                c.width = w; c.height = h;
+                const ctx = c.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0, w, h);
+                applyWatermarkToCanvas(c, itemId);
+                document.getElementById(p).innerHTML = `<img src="${c.toDataURL('image/jpeg', 0.8)}">`;
+                saveDraft(); handleAutoNextStep(stage);
+
+                // Auto-generate AI description only after stage 'sesudah' or when all photos are present
+                const ta = document.getElementById(`ta-${itemId}`);
+                if (stage === 'sesudah' && ta && (!ta.value.trim() || ta.value.startsWith('🤖'))) {
+                    triggerAiDescription(itemId);
+                }
+            };
+            img.src = e.target.result;
         };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+    }
 }
 
 async function triggerAiDescription(itemId) {

@@ -59,6 +59,31 @@
 </div>
 
 <script>
+function formatPrintDate(dateInput) {
+    if (!dateInput || dateInput === '-') return '-';
+    const monthNamesIndo = [
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput.trim())) {
+        const parts = dateInput.trim().split('-');
+        const year = parts[0];
+        const monthIdx = parseInt(parts[1], 10) - 1;
+        const day = parts[2].padStart(2, '0');
+        if (monthIdx >= 0 && monthIdx < 12) {
+            return `${day} ${monthNamesIndo[monthIdx]} ${year}`;
+        }
+    }
+    const d = new Date(dateInput);
+    if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = monthNamesIndo[d.getMonth()];
+        const year = d.getFullYear();
+        return `${day} ${month} ${year}`;
+    }
+    return dateInput;
+}
+
 async function loadPreview() {
     const selectedIds = JSON.parse(sessionStorage.getItem('selected_print_ids') || '[]');
     if (selectedIds.length === 0) {
@@ -123,10 +148,7 @@ async function loadPreview() {
         
         chunk.forEach((item, itemIdx) => {
             const officerText = item.officer || '-';
-            const dateStr = item.workDate || '-';
-            const formattedTime = item.workTime || '';
-            const timeStr = formattedTime ? ` / ${formattedTime}` : '';
-            const dateTimeText = `${dateStr}${timeStr}`;
+            const formattedDate = formatPrintDate(item.workDate);
 
             let locationHTML = '';
             if (item.addr && item.addr !== "Alamat otomatis..." && !item.addr.includes("Menerjemahkan")) {
@@ -191,8 +213,8 @@ async function loadPreview() {
                         <div class="print-info-value">${officerText}</div>
                     </div>
                     <div class="print-info-row">
-                        <span class="print-info-label">Tanggal / Pukul</span>
-                        <div class="print-info-value">${dateTimeText}</div>
+                        <span class="print-info-label">Tanggal</span>
+                        <div class="print-info-value">${formattedDate}</div>
                     </div>
                     <div class="print-info-row">
                         <span class="print-info-label">Lokasi / Koordinat</span>
