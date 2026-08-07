@@ -7,18 +7,7 @@ let itemCount = 0, map, marker, activeInputId, activeAddrId, tempCoords;
 let cameraStream = null, activePreviewId = null, currentStage = null;
 let wmInterval = null;
 let editContextId = null;
-
-// --- KONFIGURASI GEMINI AI API KEY (Encrypted for GitHub Protection) ---
-let GEMINI_API_KEY = atob('QVEuQWI4Uk42S29XOGg3Z1N5UW94Y1JFWGVaQTZScG9ITGVVREFvRVRKcUhSZEp3YmwyUnc=');
-
-function getGeminiApiKey() {
-    return localStorage.getItem('gemini_api_key') || GEMINI_API_KEY;
-}
-
-function setGeminiApiKey(key) {
-    localStorage.setItem('gemini_api_key', key);
-    GEMINI_API_KEY = key;
-}
+let currentFacingMode = 'environment'; // 'environment' = belakang, 'user' = depan
 
 function getWatermarkData(itemId) {
     const now = new Date();
@@ -139,11 +128,18 @@ function addNewJobItem() {
     });
     html += `</div>
             <div class="footer-section">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <div style="margin-bottom:6px;">
                     <label style="font-size:10px; font-weight:bold; color:#555;">KETERANGAN PEKERJAAN:</label>
-                    <button type="button" onclick="triggerAiDescription(${itemCount})" style="background:#8e44ad; color:white; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:bold;">✨ AI Deskripsi Gambar</button>
                 </div>
-                <textarea id="ta-${itemCount}" onfocus="Jarvis.pandu('keterangan')" oninput="saveDraft()" placeholder="Keterangan akan terisi otomatis dari foto oleh AI Gemini, atau Anda bisa mengetiknya sendiri..."></textarea>
+                <textarea id="ta-${itemCount}" onfocus="Jarvis.pandu('keterangan')" oninput="saveDraft()" placeholder="Masukkan keterangan pekerjaan..."></textarea>
+                <div style="margin-top:8px;">
+                    <label style="font-size:10px; font-weight:bold; color:#555;">PERALATAN YANG DIGUNAKAN:</label>
+                    <textarea id="alat-${itemCount}" oninput="saveDraft()" rows="2" placeholder="Contoh: Breaker, gergaji pipa, alat press, dll..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; font-size:11px; resize:vertical; box-sizing:border-box; margin-top:4px;"></textarea>
+                </div>
+                <div style="margin-top:8px;">
+                    <label style="font-size:10px; font-weight:bold; color:#555;">BAHAN:</label>
+                    <textarea id="bahan-${itemCount}" oninput="saveDraft()" rows="2" placeholder="Contoh: Pipa PVC 4\", Clamp Saddle 4\", Pipa HDPE 10\", dll..." style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px; font-size:11px; resize:vertical; box-sizing:border-box; margin-top:4px;"></textarea>
+                </div>
             </div>
         </div>`;
     container.insertAdjacentHTML('beforeend', html);
@@ -235,11 +231,61 @@ async function openCustomCamera(p, stage) {
         document.getElementById('val-addr').innerText = wm.addrText;
     }, 1000);
 
+    await startCameraStream();
+    document.getElementById('cam-modal').style.display = 'block';
+}
+
+async function startCameraStream() {
+    // Stop stream lama jika ada
+    if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
     try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        document.getElementById('cam-video').srcObject = cameraStream;
-        document.getElementById('cam-modal').style.display = 'block';
-    } catch(e) { alert("Kamera tidak diizinkan."); }
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: currentFacingMode,
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            audio: false
+        });
+        const video = document.getElementById('cam-video');
+        video.srcObject = cameraStream;
+        // Sesuaikan ukuran video setelah metadata dimuat
+        video.onloadedmetadata = () => { adjustVideoSize(); };
+    } catch(e) {
+        // Jika kamera yang diminta tidak tersedia, coba fallback
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            document.getElementById('cam-video').srcObject = cameraStream;
+        } catch(e2) {
+            alert('Kamera tidak dapat diakses. Pastikan izin kamera telah diberikan.');
+        }
+    }
+}
+
+function adjustVideoSize() {
+    const video = document.getElementById('cam-video');
+    const modal = document.getElementById('cam-modal');
+    if (!video.videoWidth || !video.videoHeight) return;
+
+    const screenW = window.innerWidth;
+    const screenH = window.innerHeight;
+    const videoRatio = video.videoWidth / video.videoHeight;
+    const screenRatio = screenW / screenH;
+
+    if (videoRatio > screenRatio) {
+        // Video lebih lebar dari layar
+        video.style.width = '100%';
+        video.style.height = 'auto';
+    } else {
+        // Video lebih tinggi dari layar
+        video.style.width = 'auto';
+        video.style.height = '100%';
+    }
+}
+
+async function flipCamera() {
+    currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+    await startCameraStream();
 }
 
 function capturePhoto() {
@@ -276,12 +322,6 @@ function capturePhoto() {
     document.getElementById(activePreviewId).innerHTML = `<img src="${canvas.toDataURL('image/jpeg', 0.8)}">`;
     saveDraft(); closeCamera();
     handleAutoNextStep(currentStage);
-
-    // Auto-generate AI description only after the last stage 'sesudah' or when all photos are present
-    const ta = document.getElementById(`ta-${itemId}`);
-    if (currentStage === 'sesudah' && ta && (!ta.value.trim() || ta.value.startsWith('🤖'))) {
-        triggerAiDescription(itemId);
-    }
 }
 
 function processGalleryImg(input, p, stage) {
@@ -312,115 +352,13 @@ function processGalleryImg(input, p, stage) {
             document.getElementById(p).innerHTML = `<img src="${c.toDataURL('image/jpeg', 0.8)}">`;
             saveDraft();
             handleAutoNextStep(stage);
-
-            // Auto-generate AI description only after stage 'sesudah' or when all photos are present
-            const ta = document.getElementById(`ta-${itemId}`);
-            if (stage === 'sesudah' && ta && (!ta.value.trim() || ta.value.startsWith('🤖'))) {
-                triggerAiDescription(itemId);
-            }
         };
         img.src = e.target.result;
     };
     reader.readAsDataURL(file);
 }
 
-async function triggerAiDescription(itemId) {
-    const ta = document.getElementById(`ta-${itemId}`);
-    if (!ta) return;
 
-    const imgElements = [
-        document.getElementById(`p1-${itemId}`)?.querySelector('img'),
-        document.getElementById(`p2-${itemId}`)?.querySelector('img'),
-        document.getElementById(`p3-${itemId}`)?.querySelector('img')
-    ].filter(img => img && img.src && img.src.startsWith('data:image'));
-
-    if (imgElements.length === 0) {
-        alert("Silakan ambil atau pilih foto terlebih dahulu!");
-        return;
-    }
-
-    let key = getGeminiApiKey();
-    if (!key) {
-        alert("Fitur AI belum dikonfigurasi.");
-        return;
-    }
-
-    // Pop-up input kata kunci pekerjaan terkait
-    const userKeyword = prompt(
-        "Masukkan kata kunci pekerjaan/kegiatan (opsional):\nContoh: Pemasangan Pipa, Perbaikan Lampu Jalan, Pembersihan Drainase, dll."
-    );
-
-    let promptText = "Di bawah ini adalah foto-foto Rangkaian Kegiatan Pekerjaan (Sebelum, Proses, dan Sesudah).";
-    if (userKeyword && userKeyword.trim()) {
-        promptText += ` Fokus/kata kunci pekerjaan terkait: "${userKeyword.trim()}".`;
-    }
-    promptText += " Tugas Anda: Buatkan HANYA 1 (SATU) KALIMAT RINGKASAN UTUH yang merangkum keseluruhan kegiatan/pekerjaan tersebut untuk laporan dokumentasi kinerja. DILARANG MEMBUAT POINT-POINT ATAU DESKRIPSI TERPISAH PER FOTO. Hasilkan HANYA 1 kalimat tunggal/majemuk yang padat, jelas, dan profesional dalam bahasa Indonesia.";
-
-    const parts = [{ text: promptText }];
-
-    imgElements.forEach(img => {
-        const matches = img.src.match(/^data:(image\/\w+);base64,(.+)$/);
-        if (matches) {
-            parts.push({
-                inline_data: {
-                    mime_type: matches[1],
-                    data: matches[2]
-                }
-            });
-        }
-    });
-
-    const originalText = ta.value;
-    ta.value = "🤖 Gemini AI sedang menganalisis foto...";
-    ta.disabled = true;
-
-    const candidateModels = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'];
-    let lastError = null;
-    let success = false;
-
-    for (const model of candidateModels) {
-        try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'X-goog-api-key': key 
-                },
-                body: JSON.stringify({ contents: [{ parts }] })
-            });
-
-            const data = await res.json();
-            if (data.error) {
-                lastError = data.error.message;
-                console.warn(`Gemini Model [${model}] Error:`, data.error);
-                continue;
-            }
-
-            const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) {
-                ta.value = text.trim();
-                saveDraft();
-                success = true;
-                break;
-            }
-        } catch (err) {
-            lastError = err.message;
-        }
-    }
-
-    if (!success) {
-        ta.value = originalText;
-        if (lastError && (lastError.includes("not found") || lastError.includes("API key") || lastError.includes("INVALID_ARGUMENT"))) {
-            alert("Gagal memanggil Gemini AI:\nAPI Key tidak valid atau belum diaktifkan.\n\nPastikan Anda mengambil API Key resmi dari Google AI Studio (https://aistudio.google.com/).");
-            const newKey = prompt("Masukkan Gemini API Key resmi Anda (diawali 'AIzaSy...'):");
-            if (newKey) setGeminiApiKey(newKey.trim());
-        } else {
-            alert("Gagal memanggil Gemini AI: " + (lastError || "Terjadi kesalahan jaringan."));
-        }
-    }
-
-    ta.disabled = false;
-}
 
 function handleAutoNextStep(stage) {
     if(stage === 'sebelum') Jarvis.pandu('foto_proses');
@@ -430,8 +368,10 @@ function handleAutoNextStep(stage) {
 
 function closeCamera() { 
     if(cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
     if(wmInterval) clearInterval(wmInterval);
-    document.getElementById('cam-modal').style.display = 'none'; 
+    document.getElementById('cam-modal').style.display = 'none';
+    currentFacingMode = 'environment'; // Reset ke kamera belakang
 }
 
 async function saveDraft() {
@@ -446,7 +386,9 @@ async function saveDraft() {
             p1: document.getElementById(`p1-${id}`).querySelector('img')?.src || null,
             p2: document.getElementById(`p2-${id}`).querySelector('img')?.src || null,
             p3: document.getElementById(`p3-${id}`).querySelector('img')?.src || null,
-            desc: document.getElementById(`ta-${id}`).value
+            desc: document.getElementById(`ta-${id}`).value,
+            alat: document.getElementById(`alat-${id}`)?.value || '',
+            bahan: document.getElementById(`bahan-${id}`)?.value || ''
         });
     });
     await localforage.setItem('lapdok_draft', items);
@@ -469,6 +411,8 @@ async function loadDraft() {
         document.getElementById(`gps-res-${id}`).value = data.gps || "";
         document.getElementById(`addr-res-${id}`).innerText = data.addr || "Alamat otomatis...";
         document.getElementById(`ta-${id}`).value = data.desc || "";
+        if (document.getElementById(`alat-${id}`)) document.getElementById(`alat-${id}`).value = data.alat || "";
+        if (document.getElementById(`bahan-${id}`)) document.getElementById(`bahan-${id}`).value = data.bahan || "";
         if(data.p1) document.getElementById(`p1-${id}`).innerHTML = `<img src="${data.p1}">`;
         if(data.p2) document.getElementById(`p2-${id}`).innerHTML = `<img src="${data.p2}">`;
         if(data.p3) document.getElementById(`p3-${id}`).innerHTML = `<img src="${data.p3}">`;
@@ -533,3 +477,18 @@ window.onload = async () => {
     // -----------------------------
     await loadDraft(); 
 };
+
+// Responsif saat rotasi perangkat: sesuaikan ukuran video kamera secara otomatis
+window.addEventListener('resize', () => {
+    if (document.getElementById('cam-modal').style.display !== 'none') {
+        adjustVideoSize();
+    }
+});
+window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+        if (document.getElementById('cam-modal').style.display !== 'none') {
+            adjustVideoSize();
+        }
+    }, 300); // Beri jeda agar browser selesai merotasi layar
+});
+

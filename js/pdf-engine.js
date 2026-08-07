@@ -178,53 +178,134 @@ async function prepareContent() {
     });
     allItems.sort((a, b) => new Date(a.workDate) - new Date(b.workDate));
 
-    const itemsPerPage = 3; // Kunci: 3 item per halaman
-    const totalPages = Math.ceil(allItems.length / itemsPerPage);
-    
+    let mapInitJobs = [];
+
+    function parseCoords(gpsStr) {
+        if (!gpsStr) return null;
+        let str = gpsStr;
+        if (str.includes('query=')) {
+            str = str.split('query=')[1];
+        }
+        const parts = str.split(',');
+        if (parts.length >= 2) {
+            const lat = parseFloat(parts[0]);
+            const lng = parseFloat(parts[1]);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                return { lat, lng };
+            }
+        }
+        return null;
+    }
+
     for (let i = 0; i < allItems.length; i += itemsPerPage) {
         const page = document.createElement('div');
         page.className = 'page-container';
         const chunk = allItems.slice(i, i + itemsPerPage);
+        const isLembur = reports[0]?.type === 'lembur';
         
         let html = `
-            <div class="print-main-header" style="${reports[0].type === 'lembur' ? 'background:#e67e22;' : ''}">
-                <h1>${reports[0].type === 'lembur' ? `LAPORAN LEMBUR PEKERJAAN ${reports[0].subBidang || ''}` : 'DOKUMENTASI LAPORAN KINERJA'}</h1>
-                <div style="display:flex; justify-content:center; gap:20px; color:${reports[0].type === 'lembur' ? 'white' : 'black'}; font-size:11px; margin-top:5px;">
-                    <span>${reports[0].type === 'lembur' ? `BULAN: ${reports[0].monthLabel}` : `TANGGAL: ${chunk[0].workDate}`}</span>
-                </div>
+            <div class="print-main-header" style="${isLembur ? 'background:#e67e22;' : ''}">
+                <h1>${isLembur ? `LAPORAN LEMBUR PEKERJAAN ${reports[0].subBidang || ''}` : 'DOKUMENTASI LAPORAN KINERJA'}</h1>
             </div>`;
         
-        chunk.forEach((item, idx) => {
+        chunk.forEach((item, itemIdx) => {
+            const officerText = item.officer || '-';
+            const dateStr = item.workDate || '-';
+            const formattedTime = item.workTime || '';
+            const timeStr = formattedTime ? ` / ${formattedTime}` : '';
+            const dateTimeText = `${dateStr}${timeStr}`;
+
+            let locationHTML = '';
+            if (item.addr && item.addr !== "Alamat otomatis..." && !item.addr.includes("Menerjemahkan")) {
+                locationHTML += `<div style="margin-bottom:3px; color:#222;">${item.addr}</div>`;
+            }
+
+            const coords = parseCoords(item.gps);
+            if (item.gps || coords) {
+                let coordsText = item.gps;
+                let mapsUrl = item.gps;
+                if (coords) {
+                    coordsText = `${coords.lat}, ${coords.lng}`;
+                    mapsUrl = `https://www.google.com/maps/search/?api=1&query=${coords.lat},${coords.lng}`;
+                } else if (item.gps.includes('query=')) {
+                    coordsText = item.gps.split('query=')[1];
+                } else if (item.gps.includes(',')) {
+                    mapsUrl = `https://www.google.com/maps/search/?api=1&query=${item.gps}`;
+                }
+                locationHTML += `<div style="margin-top:2px; font-weight:bold; color:#2c3e50;">📍 Koordinat: ${coordsText}</div>`;
+                locationHTML += `<div style="margin-top:2px;"><a href="${mapsUrl}" target="_blank" style="color:#2980b9; text-decoration:underline; word-break:break-all; font-size:8px;">${mapsUrl}</a></div>`;
+                
+                if (coords) {
+                    const mapId = `pdf-sat-map-${i}-${itemIdx}`;
+                    locationHTML += `
+                    <div style="margin-top:4px;">
+                        <div style="font-weight:bold; font-size:8px; color:#555; margin-bottom:2px;">🛰️ Pratinjau Peta Satelit (1:1):</div>
+                        <div id="${mapId}" style="width:100%; aspect-ratio:1/1; max-height:150px; border:1px solid #000; border-radius:4px; overflow:hidden; background:#eee;"></div>
+                    </div>`;
+                    mapInitJobs.push({ id: mapId, lat: coords.lat, lng: coords.lng });
+                }
+            }
+            if (!locationHTML) locationHTML = (item.addr && item.addr !== "Alamat otomatis...") ? item.addr : '-';
+
             html += `
-            <div class="print-job-item">
-                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #000; background:#f9f9f9; padding:4px 12px;">
-                    <div style="font-size:8.5px;"><strong>LOKASI:</strong> ${item.gps || '-'}</div>
-                    <div style="font-size:8.5px;"><strong>PETUGAS:</strong> ${item.officer || '-'}</div>
-                    ${item.reportType === 'lembur' ? `<div style="font-size:8.5px; font-weight:bold; color:#e67e22;">🕒 ${item.timeStart || '--:--'} - ${item.timeEnd || '--:--'}</div>` : ''}
+            <div class="print-job-item-merged">
+                <!-- Kolom Kiri: 3 Foto Vertikal dengan Label di Atas Foto -->
+                <div class="print-photos-col">
+                    <div class="print-photo-block">
+                        <div class="print-photo-lbl">SEBELUM</div>
+                        <div class="print-img-box">
+                            ${item.p1 ? `<img src="${item.p1}">` : '<div style="opacity:0.4; font-size:10px;">Tidak ada foto (Sebelum)</div>'}
+                        </div>
+                    </div>
+                    <div class="print-photo-block">
+                        <div class="print-photo-lbl">PROSES</div>
+                        <div class="print-img-box">
+                            ${item.p2 ? `<img src="${item.p2}">` : '<div style="opacity:0.4; font-size:10px;">Tidak ada foto (Proses)</div>'}
+                        </div>
+                    </div>
+                    <div class="print-photo-block">
+                        <div class="print-photo-lbl">SESUDAH</div>
+                        <div class="print-img-box">
+                            ${item.p3 ? `<img src="${item.p3}">` : '<div style="opacity:0.4; font-size:10px;">Tidak ada foto (Sesudah)</div>'}
+                        </div>
+                    </div>
                 </div>
-                <div class="print-grid">
-                    <div class="print-col">
-                        <div class="print-lbl">SEBELUM</div>
-                        <div class="print-img-box">${item.p1 ? `<img src="${item.p1}">` : 'No Photo'}</div>
+
+                <!-- Kolom Kanan: Informasi Pekerjaan yang Di-Merge -->
+                <div class="print-info-col-merged">
+                    <div class="print-info-row">
+                        <span class="print-info-label">Nama Petugas</span>
+                        <div class="print-info-value">${officerText}</div>
                     </div>
-                    <div class="print-col">
-                        <div class="print-lbl">PROSES</div>
-                        <div class="print-img-box">${item.p2 ? `<img src="${item.p2}">` : 'No Photo'}</div>
+                    <div class="print-info-row">
+                        <span class="print-info-label">Tanggal / Pukul</span>
+                        <div class="print-info-value">${dateTimeText}</div>
                     </div>
-                    <div class="print-col">
-                        <div class="print-lbl">SESUDAH</div>
-                        <div class="print-img-box">${item.p3 ? `<img src="${item.p3}">` : 'No Photo'}</div>
+                    <div class="print-info-row">
+                        <span class="print-info-label">Lokasi / Koordinat</span>
+                        <div class="print-info-value" style="font-size:8.5px;">${locationHTML}</div>
                     </div>
+                    <div class="print-info-row" style="margin-top: 4px;">
+                        <span class="print-info-label">Keterangan Pekerjaan</span>
+                        <div class="print-info-value" style="white-space: pre-wrap; line-height: 1.4; color: #2c3e50; font-size: 10px;">${item.desc || '-'}</div>
+                    </div>
+                    ${item.alat ? `<div class="print-info-row" style="margin-top: 4px;">
+                        <span class="print-info-label">Peralatan Digunakan</span>
+                        <div class="print-info-value" style="white-space: pre-wrap; line-height: 1.4; color: #2c3e50; font-size: 10px;">${item.alat}</div>
+                    </div>` : ''}
+                    ${item.bahan ? `<div class="print-info-row" style="margin-top: 4px;">
+                        <span class="print-info-label">Bahan</span>
+                        <div class="print-info-value" style="white-space: pre-wrap; line-height: 1.4; color: #2c3e50; font-size: 10px;">${item.bahan}</div>
+                    </div>` : ''}
                 </div>
-                <div class="print-desc"><strong>KETERANGAN:</strong> ${item.desc}</div>
             </div>`;
         });
         html += `<div class="print-footer-page">Halaman ${Math.floor(i/itemsPerPage) + 1} dari ${totalPages}</div>`;
         page.innerHTML = html;
         target.appendChild(page);
 
-        // Tambahkan Tanda Tangan jika ini halaman terakhir
-        if (i + itemsPerPage >= allItems.length) {
+        // Tambahkan Tanda Tangan HANYA jika ini halaman terakhir dan merupakan Laporan Lembur
+        if (isLembur && i + itemsPerPage >= allItems.length) {
             const sigHtml = `
                 <div class="print-signature">
                     <div class="sig-col">
@@ -243,6 +324,35 @@ async function prepareContent() {
             page.insertAdjacentHTML('beforeend', sigHtml);
         }
     }
+
+    // Inisialisasi Peta Satelit Zoom Dekat
+    setTimeout(() => {
+        mapInitJobs.forEach(job => {
+            const el = document.getElementById(job.id);
+            if (el && typeof L !== 'undefined' && !el._leaflet_id) {
+                try {
+                    const m = L.map(job.id, {
+                        center: [job.lat, job.lng],
+                        zoom: 16,
+                        zoomControl: false,
+                        attributionControl: false,
+                        dragging: false,
+                        touchZoom: false,
+                        scrollWheelZoom: false,
+                        doubleClickZoom: false
+                    });
+                    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                        maxZoom: 20,
+                        maxNativeZoom: 20,
+                        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                        crossOrigin: true
+                    }).addTo(m);
+                    L.marker([job.lat, job.lng]).addTo(m);
+                    setTimeout(() => { m.invalidateSize(); }, 150);
+                } catch(e) { console.error("Inisialisasi Peta Satelit PDF Gagal:", e); }
+            }
+        });
+    }, 100);
 }
 
 async function triggerPrint() { await prepareContent(); setTimeout(window.print, 500); }

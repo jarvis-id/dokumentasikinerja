@@ -212,14 +212,57 @@ body {
 }
 .btn-locate:hover { background: #f4f4f4; }
 
-#cam-modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: #000; }
-#cam-video { width: 100%; height: 100%; object-fit: cover; }
-.cam-controls { position: absolute; bottom: 30px; left: 0; width: 100%; display: flex; justify-content: space-around; align-items: center; z-index: 10001; }
-.btn-shutter { width: 70px; height: 70px; background: white; border: 5px solid rgba(255,255,255,0.3); border-radius: 50%; cursor: pointer; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+#cam-modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background: #000;
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+#cam-video {
+    /* Video mengisi layar secara proporsional, tanpa dipotong */
+    max-width: 100%;
+    max-height: calc(100% - 110px); /* sisakan ruang kontrol di bawah */
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    margin: auto;
+}
+.cam-controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 10001;
+    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+    padding: 0 20px 16px;
+    box-sizing: border-box;
+}
+.btn-shutter { width: 70px; height: 70px; background: white; border: 5px solid rgba(255,255,255,0.3); border-radius: 50%; cursor: pointer; box-shadow: 0 0 15px rgba(0,0,0,0.5); flex-shrink: 0; }
 .btn-shutter:active { transform: scale(0.9); background: #eee; }
 
 /* TIME MARK STYLES */
-#cam-overlay { position: absolute; bottom: 110px; left: 20px; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); pointer-events: none; z-index: 10001; font-family: Arial, sans-serif; }
+#cam-overlay {
+    position: fixed;
+    bottom: 110px;
+    left: 20px;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    pointer-events: none;
+    z-index: 10001;
+    font-family: Arial, sans-serif;
+}
 .tm-flex { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
 .tm-time { font-size: 38px; font-weight: bold; font-family: 'Arial Narrow', sans-serif; }
 .tm-line { width: 3px; height: 35px; background: #FFD700; border-radius: 2px; }
@@ -227,6 +270,26 @@ body {
 .tm-date { font-size: 14px; font-weight: bold; }
 .tm-day { font-size: 14px; font-weight: bold; }
 .tm-info { font-size: 10px; opacity: 0.9; margin-top: 2px; }
+
+/* Landscape mode: geser overlay ke kiri atas agar tidak tertimpa kontrol */
+@media (orientation: landscape) {
+    #cam-video {
+        max-height: calc(100% - 80px);
+    }
+    .cam-controls {
+        height: 70px;
+        padding-bottom: 8px;
+    }
+    #cam-overlay {
+        bottom: 80px;
+        left: 15px;
+    }
+    .tm-time { font-size: 28px; }
+    .tm-date { font-size: 11px; }
+    .tm-day { font-size: 11px; }
+    .tm-info { font-size: 9px; }
+    .btn-shutter { width: 55px; height: 55px; }
+}
 
 #btn-mute-toggle { 
     display: none; 

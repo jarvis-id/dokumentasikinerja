@@ -127,53 +127,79 @@ body {
 .print-main-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 3mm; padding: 5px; margin-top: 0; }
 .print-main-header h1 { font-size: 14px; margin: 0; text-transform: uppercase; }
 .print-main-header h2 { font-size: 11px; margin: 2px 0 0 0; }
-.print-job-item { 
+.print-job-item-merged { 
     border: 1px solid #000; 
-    margin-bottom: 7mm; /* Jarak antar item lebih lega */
+    margin-bottom: 5mm; 
     page-break-inside: avoid; 
     background: #fff; 
+    display: flex;
+    box-sizing: border-box;
+    width: 100%;
 }
-.print-meta-location { 
-    font-size: 8.5px; 
-    padding: 6px 12px; /* Padding lebih luas */
-    border-bottom: 1px solid #000; 
-    word-break: break-word; 
-    background: #fdfdfd;
+.print-photos-col {
+    width: 48%;
+    border-right: 1px solid #000;
+    padding: 2mm;
+    display: flex;
+    flex-direction: column;
+    gap: 2mm;
+    background: #fff;
 }
-.print-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid #000; width: 100%; }
-.print-col { border-right: 1px solid #000; display: flex; flex-direction: column; align-items: center; padding: 0; }
-.print-col:last-child { border-right: none; }
-.print-lbl { 
-    width: 100%; 
-    background: #eaeaea; 
-    text-align: center; 
-    font-size: 8px; 
-    font-weight: bold; 
-    padding: 4px 0; /* Ruang napas pada label */
-    border-bottom: 1px solid #000; 
-    letter-spacing: 0.5px; 
+.print-photo-block {
+    border: 1px solid #000;
+    display: flex;
+    flex-direction: column;
+}
+.print-photo-lbl {
+    background: #2c3e50;
+    color: #fff;
+    font-size: 8.5px;
+    font-weight: bold;
+    text-align: center;
+    padding: 3px 0;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 .print-img-box { 
     width: 100%; 
-    height: 40mm; 
+    height: 60mm; 
     display: flex; 
     align-items: center; 
     justify-content: center; 
     overflow: hidden; 
     background: #fff; 
-    padding: 1px; 
+    padding: 2px;
 }
 .print-img-box img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
-.print-desc { 
-    padding: 6px 12px; /* Padding deskripsi lebih serasi */
-    font-size: 9px; 
+.print-info-col-merged {
+    width: 52%;
+    padding: 4mm 5mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 3mm;
+    font-size: 9.5px;
     line-height: 1.4;
-    word-break: break-word; 
-    white-space: pre-wrap; 
-    max-height: 18mm; 
-    overflow: hidden;
+    background: #fff;
 }
-.print-footer-page { position: absolute; bottom: 8mm; right: 15mm; font-size: 8px; font-style: italic; font-weight: bold; }
+.print-info-row {
+    margin-bottom: 1mm;
+}
+.print-info-label {
+    font-weight: bold;
+    color: #000;
+    display: block;
+    font-size: 9px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 1px;
+    margin-bottom: 2px;
+}
+.print-info-value {
+    color: #222;
+    word-break: break-word;
+}
+.print-footer-page { position: absolute; bottom: 5mm; right: 15mm; font-size: 8.5px; font-style: italic; font-weight: bold; }
 
 .print-signature {
     margin-top: 10mm;
