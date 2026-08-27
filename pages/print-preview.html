@@ -39,7 +39,40 @@
         .btn-prev:hover { opacity: 0.9; transform: translateY(-1px); }
 
         /* Sembunyikan toolbar saat memproses PDF */
-        @media print { .preview-toolbar { display: none; } }
+        @media print { 
+            body { background: white !important; padding: 0 !important; margin: 0 !important; }
+            .preview-toolbar { display: none !important; }
+            #print-content-target { width: 210mm !important; margin: 0 !important; padding: 0 !important; }
+            .page-container { width: 210mm !important; height: 297mm !important; margin: 0 !important; box-shadow: none !important; }
+        }
+
+        /* Mode Khusus saat Mengunduh PDF via html2pdf (Desktop & Mobile) */
+        body.pdf-export {
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            min-width: 210mm !important;
+        }
+        body.pdf-export .preview-toolbar {
+            display: none !important;
+        }
+        body.pdf-export #print-content-target {
+            width: 210mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        body.pdf-export .page-container {
+            width: 210mm !important;
+            min-height: 297mm !important;
+            height: 297mm !important;
+            margin: 0 !important;
+            padding: 10mm 15mm !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            box-sizing: border-box !important;
+            page-break-after: always !important;
+            page-break-inside: avoid !important;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 </head>
@@ -300,9 +333,13 @@ async function downloadPDF() {
     const element = document.getElementById('print-content-target');
     const toolbar = document.getElementById('toolbar');
     
-    // Sembunyikan toolbar secara paksa
+    // Aktifkan mode export PDF dan sembunyikan toolbar
+    document.body.classList.add('pdf-export');
     toolbar.style.display = 'none';
-    document.body.style.paddingTop = '0';
+    window.scrollTo(0, 0);
+
+    // Beri sedikit jeda agar DOM & peta tersinkronisasi
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     const opt = {
         margin: [0, 0, 0, 0],
@@ -310,9 +347,11 @@ async function downloadPDF() {
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
             scale: 2, 
-            windowWidth: 800, 
             useCORS: true,
-            letterRendering: true
+            logging: false,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: 794
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
@@ -324,8 +363,8 @@ async function downloadPDF() {
         console.error(e);
         alert("Gagal mengunduh PDF.");
     } finally {
+        document.body.classList.remove('pdf-export');
         toolbar.style.display = 'flex';
-        document.body.style.paddingTop = '60px';
     }
 }
 
