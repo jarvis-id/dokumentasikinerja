@@ -336,7 +336,7 @@ function processGalleryImg(input, p, stage) {
     if (typeof SmartCompressor !== 'undefined') {
         SmartCompressor.compressImageFile(file, 1000, 0.75).then(res => {
             const c = res.canvas;
-            applyWatermarkToCanvas(c, itemId);
+            // Watermark dinonaktifkan untuk foto galeri agar tidak memunculkan timemark
             const compressedDataUrl = SmartCompressor.compressCanvas(c, 1000, 0.75);
             document.getElementById(p).innerHTML = `<img src="${compressedDataUrl}">`;
             saveDraft();
@@ -364,7 +364,7 @@ function processGalleryImg(input, p, stage) {
                 ctx.imageSmoothingEnabled = true;
                 ctx.imageSmoothingQuality = 'high';
                 ctx.drawImage(img, 0, 0, w, h);
-                applyWatermarkToCanvas(c, itemId);
+                // Watermark dinonaktifkan untuk foto galeri agar tidak memunculkan timemark
                 document.getElementById(p).innerHTML = `<img src="${c.toDataURL('image/jpeg', 0.8)}">`;
                 saveDraft();
                 handleAutoNextStep(stage);
