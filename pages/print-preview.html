@@ -8,6 +8,8 @@
     <!-- Leaflet JS & CSS for Satellite Map Preview -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body { background: #525659; margin: 0; padding-top: 60px; }
@@ -38,15 +40,17 @@
         .btn-download-now { background: #27ae60; color: white; }
         .btn-prev:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        /* Sembunyikan toolbar saat memproses PDF */
+        /* Sembunyikan toolbar saat memproses cetak browser */
         @media print { 
             body { background: white !important; padding: 0 !important; margin: 0 !important; }
             .preview-toolbar { display: none !important; }
             #print-content-target { width: 210mm !important; margin: 0 !important; padding: 0 !important; }
             .page-container { width: 210mm !important; height: 297mm !important; margin: 0 !important; box-shadow: none !important; }
+            .page-container:not(:last-child) { page-break-after: always !important; }
+            .page-container:last-child { page-break-after: auto !important; }
         }
 
-        /* Mode Khusus saat Mengunduh PDF via html2pdf (Desktop & Mobile) */
+        /* Mode Khusus saat Mengunduh PDF (Desktop & Mobile) */
         body.pdf-export {
             background: white !important;
             margin: 0 !important;
@@ -70,8 +74,14 @@
             box-shadow: none !important;
             border-radius: 0 !important;
             box-sizing: border-box !important;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+        body.pdf-export .page-container:not(:last-child) {
             page-break-after: always !important;
-            page-break-inside: avoid !important;
+        }
+        body.pdf-export .page-container:last-child {
+            page-break-after: auto !important;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
@@ -330,41 +340,91 @@ async function downloadPDF() {
     if (fileName === null) return; 
     if (!fileName.toLowerCase().endsWith('.pdf')) fileName += '.pdf';
 
-    const element = document.getElementById('print-content-target');
+    const pages = document.querySelectorAll('.page-container');
+    if (pages.length === 0) {
+        alert("Tidak ada halaman untuk diunduh.");
+        return;
+    }
+
     const toolbar = document.getElementById('toolbar');
+    const downloadBtn = document.querySelector('.btn-download-now');
+    const origBtnText = downloadBtn ? downloadBtn.innerHTML : '';
     
     // Aktifkan mode export PDF dan sembunyikan toolbar
     document.body.classList.add('pdf-export');
     toolbar.style.display = 'none';
     window.scrollTo(0, 0);
 
+    if (downloadBtn) {
+        downloadBtn.disabled = true;
+        downloadBtn.innerText = "⏳ Memproses PDF...";
+    }
+
     // Beri sedikit jeda agar DOM & peta tersinkronisasi
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    const opt = {
-        margin: [0, 0, 0, 0],
-        filename: fileName,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-            scale: 2, 
-            useCORS: true,
-            logging: false,
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: 794
-        },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-    };
-
     try {
-        await html2pdf().set(opt).from(element).save();
+        // Gunakan jsPDF dan html2canvas per halaman untuk hasil presisi 100% tanpa halaman kosong
+        if (window.jspdf && typeof html2canvas !== 'undefined') {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                unit: 'mm',
+                format: 'a4',
+                orientation: 'portrait'
+            });
+
+            for (let i = 0; i < pages.length; i++) {
+                if (downloadBtn) {
+                    downloadBtn.innerText = `⏳ Memproses Halaman ${i + 1}/${pages.length}...`;
+                }
+                const page = pages[i];
+                const canvas = await html2canvas(page, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: 794
+                });
+
+                const imgData = canvas.toDataURL('image/jpeg', 0.98);
+                if (i > 0) {
+                    pdf.addPage('a4', 'portrait');
+                }
+                pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+            }
+
+            pdf.save(fileName);
+        } else {
+            // Fallback ke html2pdf jika script jspdf belum siap
+            const element = document.getElementById('print-content-target');
+            const opt = {
+                margin: [0, 0, 0, 0],
+                filename: fileName,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true, 
+                    logging: false,
+                    scrollX: 0,
+                    scrollY: 0,
+                    windowWidth: 794
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'] }
+            };
+            await html2pdf().set(opt).from(element).save();
+        }
     } catch (e) {
-        console.error(e);
-        alert("Gagal mengunduh PDF.");
+        console.error("Gagal mengunduh PDF:", e);
+        alert("Gagal mengunduh PDF: " + (e.message || e));
     } finally {
         document.body.classList.remove('pdf-export');
         toolbar.style.display = 'flex';
+        if (downloadBtn) {
+            downloadBtn.disabled = false;
+            downloadBtn.innerHTML = origBtnText;
+        }
     }
 }
 
